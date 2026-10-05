@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alan Williams - Under Construction</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 700px;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 60px;
+            letter-spacing: 2px;
+        }
+
+        .logo-box {
+            display: inline-block;
+            background-color: #2b4a6f;
+            padding: 20px 28px 18px;
+            margin-bottom: 80px;
+            text-align: left;
+        }
+
+        .logo-box h2 {
+            font-family: 'Anton', Impact, 'Arial Narrow', sans-serif;
+            font-weight: 400;
+            color: #ffffff;
+            font-size: 4.5rem;
+            line-height: 0.95;
+            letter-spacing: 1px;
+        }
+
+        .logo-box h2 > span {
+            display: block;
+        }
+
+        .logo-box h2 .line-2 {
+            display: flex;
+            align-items: baseline;
+        }
+
+        /* Comma sits on the WILLIAMS baseline, flush with the outside edge of the N above */
+        .logo-box .tag {
+            margin-left: auto;
+            position: relative;
+        }
+
+        /* DEV is rotated to read top-to-bottom and stands on top of the comma */
+        .logo-box .dev {
+            position: absolute;
+            right: 0.139em;
+            bottom: 0.415em;
+            writing-mode: vertical-rl;
+            font-size: 0.505em;
+            line-height: 0.75;
+            letter-spacing: 1px;
+            color: #bdcfe6;
+        }
+
+        .logo-box p {
+            font-family: 'Oswald', 'Arial Narrow', sans-serif;
+            font-weight: 400;
+            color: #ffffff;
+            font-size: 1rem;
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .construction-figure {
+            margin: 70px 0 60px 0;
+        }
+
+        .construction-figure img {
+            width: 220px;
+            height: auto;
+        }
+
+        .coming-soon {
+            font-size: 2.8rem;
+            font-weight: bold;
+            margin-top: 40px;
+            letter-spacing: 1px;
+            line-height: 1.4;
+        }
+
+        .coming-soon .word-coming {
+            color: #4169e1;
+        }
+
+        .christmas-text {
+            display: inline;
+        }
+
+        .letter-c { color: #dc143c; }
+        .letter-h { color: #228b22; }
+        .letter-r { color: #dc143c; }
+        .letter-i { color: #228b22; }
+        .letter-s { color: #dc143c; }
+        .letter-t { color: #228b22; }
+        .letter-m { color: #dc143c; }
+        .letter-a { color: #228b22; }
+        .letter-s2 { color: #dc143c; }
+        .year-2-1 { color: #228b22; }
+        .year-0-1 { color: #dc143c; }
+        .year-0-2 { color: #228b22; }
+        .year-2-2 { color: #dc143c; }
+        .exclamation { color: #dc143c; }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2.2rem;
+                margin-bottom: 40px;
+            }
+
+            .logo-box {
+                padding: 14px 18px 12px;
+                margin-bottom: 50px;
+            }
+
+            .logo-box h2 {
+                font-size: 3rem;
+            }
+
+            .logo-box p {
+                font-size: 0.7rem;
+                margin-top: 6px;
+            }
+
+            .construction-figure {
+                margin: 40px 0;
+            }
+
+            .construction-figure img {
+                width: 160px;
+            }
+
+            .coming-soon {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Under Construction</h1>
+
+        <div class="logo-box">
+            <h2><span>ROBERT ALAN</span><span class="line-2">WILLIAMS<span class="tag">,<span class="dev">DEV</span></span></span></h2>
+            <p aria-label="Full Stack Developer"><span>F</span><span>U</span><span>L</span><span>L</span><span></span><span>S</span><span>T</span><span>A</span><span>C</span><span>K</span><span></span><span>D</span><span>E</span><span>V</span><span>E</span><span>L</span><span>O</span><span>P</span><span>E</span><span>R</span></p>
+        </div>
+
+        <div class="construction-figure">
+            <img src="images/jackhammer.gif" alt="Stick figure in a Santa hat operating a jackhammer" width="250" height="237">
+        </div>
+
+        <div class="coming-soon">
+            <span class="word-coming">Coming</span>
+            <span class="christmas-text">
+                <span class="letter-c">C</span><span class="letter-h">h</span><span class="letter-r">r</span><span class="letter-i">i</span><span class="letter-s">s</span><span class="letter-t">t</span><span class="letter-m">m</span><span class="letter-a">a</span><span class="letter-s2">s</span>
+            </span>
+            <span class="year-2-1">2</span><span class="year-0-1">0</span><span class="year-0-2">0</span><span class="year-2-2">2</span><span class="exclamation">!</span>
+        </div>
+    </div>
+</body>
+</html>
