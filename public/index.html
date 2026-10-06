@@ -22,10 +22,12 @@
             align-items: center;
             min-height: 100vh;
             padding: 20px;
+            overflow-x: clip;
         }
 
         .container {
             text-align: center;
+            width: 100%;
             max-width: 700px;
         }
 
@@ -91,13 +93,185 @@
             justify-content: space-between;
         }
 
-        .construction-figure {
+        /* Dig site: the jackhammer plus one hole per project, oldest on the left.
+           The newest hole is centred on the bit tip, measured from jackhammer.gif
+           at (92, 214) of 250 x 237. */
+        .dig-site {
+            --jh-w: 220px;
+            --jh-h: calc(var(--jh-w) * 237 / 250);
+            --bit-x: calc(50% - var(--jh-w) * 0.132);
+            --bit-y: calc(var(--jh-h) * 0.903);
+            --s: 1;
+            --fs: 1;  /* extra scale for finished holes, set by script so they fit */
+            --slot: calc(150px * var(--s) * var(--fs));
+            --cur-slot: calc(110px * var(--s));
+            position: relative;
             margin: 70px 0 60px 0;
+            padding-bottom: calc(80px * var(--s));
         }
 
-        .construction-figure img {
-            width: 220px;
+        .dig-site > img {
+            display: block;
+            position: relative;
+            z-index: 4;
+            width: var(--jh-w);
             height: auto;
+            margin: 0 auto;
+            pointer-events: none;
+        }
+
+        .holes {
+            position: absolute;
+            top: var(--bit-y);
+            /* Older holes may spread out past the container to the page edge */
+            left: min(0px, calc(50% - 50vw + 16px));
+            right: calc(100% - var(--bit-x) - var(--cur-slot) / 2);
+            height: 0;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            list-style: none;
+        }
+
+        .hole[hidden] {
+            display: none;
+        }
+
+        .hole {
+            --hs: calc(var(--s) * var(--fs));
+            position: relative;
+            flex: 0 1 var(--slot);
+            min-width: 18px;
+            height: 0;
+        }
+
+        .hole.current {
+            --hs: var(--s);
+            flex: 0 0 var(--cur-slot);
+        }
+
+        /* Nothing here may create a stacking context (no transform or z-index on
+           .hole or its link), so every hole's cracks share one layer underneath
+           every hole body. Only the opening itself (.hit) takes the pointer. */
+        .hole a {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: calc(var(--w) * var(--hs));
+            height: calc(var(--h) * var(--hs));
+            margin-left: calc(var(--w) * var(--hs) / -2);
+            margin-top: calc(var(--h) * var(--hs) / -2 + var(--shift) * var(--s));
+            color: inherit;
+            text-decoration: none;
+            pointer-events: none;
+            outline: none;
+        }
+
+        .hole svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            pointer-events: none;
+        }
+
+        .hole svg.cracks { z-index: 1; }
+        .hole svg.body { z-index: 2; }
+
+        .hole a:hover svg.body,
+        .hole a:focus-visible svg.body {
+            z-index: 3;
+        }
+
+        .hole .hit {
+            fill: transparent;
+            pointer-events: all;
+            cursor: pointer;
+        }
+
+        .hole a:focus-visible .hit {
+            stroke: #2b4a6f;
+            stroke-width: 2.5;
+        }
+
+        .hole .label {
+            position: absolute;
+            left: 50%;
+            top: calc(50% + var(--rim) * var(--hs) + 6px);
+            transform: translateX(-50%);
+            font-family: 'Oswald', 'Arial Narrow', sans-serif;
+            font-size: 0.85rem;
+            color: #333;
+            background: rgba(245, 245, 245, 0.85);
+            padding: 0 6px;
+            border-radius: 3px;
+            white-space: nowrap;
+            z-index: 3;
+            opacity: 0;
+            transition: opacity 0.15s;
+            pointer-events: none;
+        }
+
+        .hole .label small {
+            color: #777;
+            margin-left: 6px;
+        }
+
+        .hole a:hover .label,
+        .hole a:focus-visible .label,
+        .hole.current .label {
+            opacity: 1;
+        }
+
+        .hole a:hover .label,
+        .hole a:focus-visible .label {
+            z-index: 5;
+        }
+
+        /* Finished holes: the icon pops up out of the hole like a groundhog */
+        .peek {
+            pointer-events: visiblePainted;
+            transform: translateY(var(--rest));
+            transition: transform 0.25s ease-in;
+        }
+
+        .hole a:hover .peek,
+        .hole a:focus-visible .peek {
+            transform: translateY(0);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .peek, .hole a:hover .peek, .hole a:focus-visible .peek { transition: none; }
+        }
+
+        /* Chips flying off the bit */
+        .chip {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 4px;
+            height: 4px;
+            background: #8a8a8a;
+            border-radius: 1px;
+            z-index: 3;
+            opacity: 0;
+            animation: chip 0.66s ease-out infinite;
+            pointer-events: none;
+        }
+
+        .chip:nth-child(2) { --cx: -26px; --cy: -22px; animation-delay: 0.22s; }
+        .chip:nth-child(3) { --cx: 22px; --cy: -28px; animation-delay: 0.44s; width: 3px; height: 3px; }
+        .chip:nth-child(4) { --cx: -12px; --cy: -34px; animation-delay: 0.1s; width: 3px; height: 3px; }
+
+        @keyframes chip {
+            0%   { opacity: 1; transform: translate(0, 0) rotate(0); }
+            100% { opacity: 0; transform: translate(var(--cx, 18px), var(--cy, -24px)) rotate(200deg); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .chip { display: none; }
         }
 
         .coming-soon {
@@ -151,12 +325,10 @@
                 margin-top: 6px;
             }
 
-            .construction-figure {
+            .dig-site {
+                --jh-w: 160px;
+                --s: 0.75;
                 margin: 40px 0;
-            }
-
-            .construction-figure img {
-                width: 160px;
             }
 
             .coming-soon {
@@ -174,8 +346,9 @@
             <p aria-label="Full Stack Developer"><span>F</span><span>U</span><span>L</span><span>L</span><span></span><span>S</span><span>T</span><span>A</span><span>C</span><span>K</span><span></span><span>D</span><span>E</span><span>V</span><span>E</span><span>L</span><span>O</span><span>P</span><span>E</span><span>R</span></p>
         </div>
 
-        <div class="construction-figure">
+        <div class="dig-site">
             <img src="images/jackhammer.gif" alt="Stick figure in a Santa hat operating a jackhammer" width="250" height="237">
+            <ol class="holes" aria-label="Projects, oldest first"></ol>
         </div>
 
         <div class="coming-soon">
@@ -186,5 +359,277 @@
             <span class="year-2-1">2</span><span class="year-0-1">0</span><span class="year-0-2">0</span><span class="year-2-2">2</span><span class="exclamation">!</span>
         </div>
     </div>
+
+    <script>
+        // One hole per project. Finished projects are ordered by shipped date ('YYYY-MM'),
+        // oldest on the left; the project with no shipped date is the one being dug.
+        // icon: image that pops out of a finished hole on hover (none if unset). iconCenter: where the character's middle sits across the
+        //   image (0 to 1, default 0.5), so off-centre artwork rises straight up.
+        // logo: image shown in the current hole; logoBg fills behind it. Without one the
+        //   current hole shows the project's initials.
+        // percentComplete (current project, 0-100) picks how far the hole has got:
+        //   0-24 small cracks, 25-49 large cracks, 50-74 small opening, 75-100 full hole.
+        const projects = [
+            { name: 'BrewBuzz', shipped: '2021-07', url: 'https://www.brewbuzz.beer/', icon: 'images/BrewBuzz.png' },
+            { name: 'Squigglepig', shipped: '2026-10', url: 'https://squigglepig.app/', icon: 'images/Squigglepig.png', iconCenter: 0.3 },
+            { name: 'Core Sample', url: 'https://github.com/ralanwilliams/R.-Alan-Williams#readme', logoBg: '#2b4a6f', percentComplete: 0 },
+        ];
+
+        const NS = 'http://www.w3.org/2000/svg';
+        const K = 0.48;                           // perspective squash shared by every hole
+        const FINISHED_R = 58, CURRENT_R = 42;    // rim radius on the ground plane
+        // Every hole is centred where the bit lands: near the back of the current hole
+        const CENTER_SHIFT = CURRENT_R * K * 0.35;
+
+        function seededRandom(text) {
+            let h = 2166136261;
+            for (const ch of text) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+            return () => {
+                h = (h + 0x6d2b79f5) | 0;
+                let t = Math.imul(h ^ (h >>> 15), 1 | h);
+                t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
+        const fmt = n => n.toFixed(1);
+        const pathOf = pts => 'M' + pts.map(p => fmt(p[0]) + ',' + fmt(p[1])).join('L') + 'Z';
+
+        // A polyline turned into a sliver that tapers from width w to a point
+        function taper(pts, w) {
+            const left = [], right = [];
+            pts.forEach((p, i) => {
+                const a = pts[Math.max(i - 1, 0)], b = pts[Math.min(i + 1, pts.length - 1)];
+                const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1;
+                const half = (w / 2) * (1 - i / (pts.length - 1));
+                left.push([p[0] - dy / len * half, p[1] + dx / len * half]);
+                right.push([p[0] + dy / len * half, p[1] - dx / len * half]);
+            });
+            return pathOf(left.concat(right.reverse()));
+        }
+
+        function crack(rng, x, y, angle, length, width, depth, out) {
+            const pts = [[x, y]];
+            const segments = 4 + Math.floor(rng() * 4);
+            for (let i = 0; i < segments; i++) {
+                angle += (rng() - 0.5) * 0.9;
+                const step = length / segments * (0.7 + rng() * 0.6);
+                x += Math.cos(angle) * step;
+                y += Math.sin(angle) * step;
+                pts.push([x, y]);
+            }
+            out.push(taper(pts, width));
+            if (depth >= 2) return;
+            for (let i = 1; i < pts.length - 1; i++) {
+                if (rng() < 0.3) {
+                    const turn = (0.5 + rng() * 0.6) * (rng() < 0.5 ? -1 : 1);
+                    crack(rng, pts[i][0], pts[i][1], angle + turn, length * 0.45, width * 0.55, depth + 1, out);
+                }
+            }
+        }
+
+        function el(name, attrs, parent) {
+            const node = document.createElementNS(NS, name);
+            for (const k in attrs) node.setAttribute(k, attrs[k]);
+            if (parent) parent.appendChild(node);
+            return node;
+        }
+
+        function holeStage(project) {
+            const pct = Math.min(100, Math.max(0, Number(project.percentComplete) || 0));
+            return pct < 25 ? 1 : pct < 50 ? 2 : pct < 75 ? 3 : 4;
+        }
+
+        // Geometry lives on a flat ground plane, then is squashed vertically for perspective
+        function drawHole(project, id, current) {
+            const stage = current ? holeStage(project) : 4;
+            const rng = seededRandom(project.name);
+            const R = current ? CURRENT_R : FINISHED_R;
+            const k = K;
+            const reach = current ? 85 : 110;     // crack length
+            const halfW = R + reach + 10, halfH = Math.ceil(halfW * k);
+
+            const viewBox = `${-halfW} ${-halfH} ${halfW * 2} ${halfH * 2}`;
+            const cracksSvg = el('svg', { viewBox, class: 'cracks', 'aria-hidden': 'true' });
+            const svg = el('svg', { viewBox, class: 'body', 'aria-hidden': 'true' });
+            const defs = el('defs', {}, svg);
+            const plane = `scale(1 ${k})`;
+
+            // Jagged rim (smaller while the hole is only just opening up)
+            const Ro = stage === 3 ? R * 0.55 : R;
+            const n = 10 + Math.floor(rng() * 4);
+            const rim = [];
+            for (let i = 0; i < n; i++) {
+                const a = (i + (rng() - 0.5) * 0.5) / n * Math.PI * 2;
+                const r = Ro * (0.86 + rng() * 0.24);
+                rim.push([Math.cos(a) * r, Math.sin(a) * r]);
+            }
+            // Floor: the rim shrunk and pushed forward, so the back wall shows above it
+            const floor = rim.map(p => [p[0] * 0.84, p[1] * 0.84 + Ro * 0.24]);
+
+            // Cracks, each drawn twice: a light lower edge, then the dark gap
+            const cracks = [];
+            const impactY = -CENTER_SHIFT / k;    // under the bit tip, on the ground plane
+            if (stage <= 2) {
+                // No hole yet: cracks spread from where the bit strikes
+                const count = stage === 1 ? 6 : 9;
+                for (let i = 0; i < count; i++) {
+                    const a = (i + rng() * 0.6) / count * Math.PI * 2;
+                    const length = (stage === 1 ? R * 0.9 : R + reach) * (0.5 + rng() * 0.5);
+                    crack(rng, Math.cos(a) * R * 0.06, impactY + Math.sin(a) * R * 0.06, a, length,
+                        stage === 1 ? 2 : 4.5, stage === 1 ? 1 : 0, cracks);
+                }
+            } else {
+                rim.forEach(p => {
+                    if (rng() < 0.2) return;
+                    const a = Math.atan2(p[1], p[0]) + (rng() - 0.5) * 0.4;
+                    crack(rng, p[0], p[1], a, (reach + R - Ro) * (0.45 + rng() * 0.55), current ? 4 : 5, 0, cracks);
+                });
+            }
+            const crackGroup = el('g', { transform: plane }, cracksSvg);
+            const bevel = el('g', { fill: '#cfcfcf', transform: `translate(0 ${fmt(1.6 / k)})` }, crackGroup);
+            const gap = el('g', { fill: '#3a3a3a' }, crackGroup);
+            cracks.forEach(d => { el('path', { d }, bevel); el('path', { d }, gap); });
+
+            if (stage <= 2) {
+                if (stage === 2) {
+                    // Crushed dent at the impact point
+                    el('ellipse', { cx: 0, cy: fmt(impactY * k), rx: fmt(R * 0.2), ry: fmt(R * 0.2 * k), fill: '#7d7d7d' }, svg);
+                    el('ellipse', { cx: 0, cy: fmt(impactY * k + 1), rx: fmt(R * 0.11), ry: fmt(R * 0.11 * k), fill: '#3a3a3a' }, svg);
+                }
+                el('ellipse', { cx: 0, cy: 0, rx: R, ry: fmt(R * k), class: 'hit', 'vector-effect': 'non-scaling-stroke' }, svg);
+                return { svg, cracksSvg, R, k, halfW, halfH };
+            }
+
+            // Back wall
+            const wall = el('linearGradient', { id: id + 'w', x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
+            el('stop', { offset: 0, 'stop-color': '#858585' }, wall);
+            el('stop', { offset: 1, 'stop-color': '#1f1f1f' }, wall);
+            el('path', { d: pathOf(rim), transform: plane, fill: `url(#${id}w)` }, svg);
+
+            const clip = el('clipPath', { id: id + 'c' }, defs);
+            el('path', { d: pathOf(floor), transform: plane }, clip);
+            const clipRim = el('clipPath', { id: id + 'r' }, defs);
+            el('path', { d: pathOf(rim), transform: plane }, clipRim);
+
+            const inside = el('g', { 'clip-path': `url(#${id}r)` }, svg);
+            const pit = el('g', { 'clip-path': `url(#${id}c)` }, inside);
+            const fy = Ro * 0.24 * k, fw = R * 1.6, fh = R * 1.6 * k;
+            if (current) {
+                el('rect', { x: -fw / 2, y: fy - fh / 2, width: fw, height: fh, fill: project.logoBg || '#ffffff' }, pit);
+                if (project.logo) {
+                    el('image', {
+                        href: project.logo, x: -fw * 0.4, y: fy - fh * 0.38, width: fw * 0.8, height: fh * 0.8,
+                        preserveAspectRatio: 'xMidYMid meet'
+                    }, pit);
+                } else {
+                    const initials = el('text', {
+                        x: 0, y: fy + fh * 0.12, 'text-anchor': 'middle', 'dominant-baseline': 'middle',
+                        fill: '#ffffff', 'font-family': "Anton, Impact, sans-serif", 'font-size': fh * 0.55
+                    }, pit);
+                    initials.textContent = project.name.replace(/[^A-Z]/g, '').slice(0, 3) || project.name[0];
+                }
+                // Shadow cast by the back wall onto the logo
+                const shade = el('linearGradient', { id: id + 's', x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
+                el('stop', { offset: 0, 'stop-color': '#000', 'stop-opacity': 0.75 }, shade);
+                el('stop', { offset: 0.45, 'stop-color': '#000', 'stop-opacity': 0 }, shade);
+                el('rect', { x: -fw / 2, y: fy - fh / 2, width: fw, height: fh, fill: `url(#${id}s)` }, pit);
+                // Barely broken through: the logo is only dimly visible
+                if (stage === 3) el('rect', { x: -fw / 2, y: fy - fh / 2, width: fw, height: fh, fill: '#000', 'fill-opacity': 0.4 }, pit);
+            } else {
+                el('rect', { x: -fw / 2, y: fy - fh / 2, width: fw, height: fh, fill: '#0d0d0d' }, pit);
+            }
+
+            const lip = {
+                d: pathOf(rim), transform: plane, fill: 'none', stroke: '#6b6b6b', 'stroke-width': 1.2,
+                'vector-effect': 'non-scaling-stroke', 'stroke-linejoin': 'round'
+            };
+            el('path', lip, svg);
+            el('path', { d: pathOf(rim), transform: plane, class: 'hit', 'vector-effect': 'non-scaling-stroke' }, svg);
+
+            if (!current && project.icon) {
+                // The icon hides below the front lip. It is visible through the opening, and
+                // anywhere above the hole's centre line, so it appears to climb out.
+                const out = el('clipPath', { id: id + 'p' }, defs);
+                el('path', { d: pathOf(rim), transform: plane }, out);
+                el('rect', { x: -halfW, y: -halfH * 4, width: halfW * 2, height: halfH * 4 }, out);
+                const peek = el('g', { class: 'peek' }, el('g', { 'clip-path': `url(#${id}p)` }, svg));
+                // Image in a square box whose lower part stays below the front lip
+                const size = R * 1.5;
+                const center = project.iconCenter ?? 0.5;
+                el('image', {
+                    href: project.icon, width: fmt(size), height: fmt(size),
+                    x: fmt(-size / 2 + (0.5 - center) * size), y: fmt(R * k * 0.9 - size * 0.9),
+                    preserveAspectRatio: 'xMidYMax meet'
+                }, peek);
+                peek.style.setProperty('--rest', fmt(size * 0.95 + R * k * 0.3) + 'px');
+
+                // Front lip again, over the icon
+                const front = el('clipPath', { id: id + 'f' }, defs);
+                el('rect', { x: -halfW, y: 0, width: halfW * 2, height: halfH }, front);
+                el('path', { ...lip, 'clip-path': `url(#${id}f)` }, svg);
+            }
+            return { svg, cracksSvg, R, k, halfW, halfH };
+        }
+
+        const list = document.querySelector('.holes');
+        const finishedProjects = projects.filter(p => p.shipped).sort((a, b) => a.shipped.localeCompare(b.shipped));
+        const sorted = finishedProjects.concat(projects.filter(p => !p.shipped).slice(0, 1));
+        const shippedOn = p => new Date(p.shipped + '-01T00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        sorted.forEach((project, i) => {
+            const current = !project.shipped;
+            const { svg, cracksSvg, R, k, halfW, halfH } = drawHole(project, 'hole' + i, current);
+
+            const li = document.createElement('li');
+            li.className = current ? 'hole current' : 'hole';
+            const a = document.createElement('a');
+            a.href = project.url || '#';
+            a.target = '_blank';
+            a.rel = 'noopener';
+            const pct = Math.round(Math.min(100, Math.max(0, Number(project.percentComplete) || 0)));
+            a.setAttribute('aria-label', current ? `${project.name}, current project, ${pct}% complete` : `${project.name}, shipped ${shippedOn(project)}`);
+            a.style.setProperty('--w', halfW * 2 + 'px');
+            a.style.setProperty('--h', halfH * 2 + 'px');
+            a.style.setProperty('--shift', fmt(CENTER_SHIFT) + 'px');
+            a.style.setProperty('--rim', fmt(R * k * 1.15) + 'px');
+            a.append(cracksSvg, svg);
+
+            const label = document.createElement('span');
+            label.className = 'label';
+            label.textContent = (current ? 'Now digging: ' : '') + project.name;
+            const detail = document.createElement('small');
+            detail.textContent = current ? pct + '%' : shippedOn(project);
+            label.appendChild(detail);
+            a.appendChild(label);
+            li.appendChild(a);
+
+            if (current) {
+                for (let c = 0; c < 4; c++) {
+                    const chip = document.createElement('span');
+                    chip.className = 'chip';
+                    chip.setAttribute('aria-hidden', 'true');
+                    li.appendChild(chip);
+                }
+            }
+            list.appendChild(li);
+        });
+
+        // Show as many of the most recent finished holes as fit without going below
+        // MIN_FIT of full size; older ones are hidden on narrow screens.
+        const MIN_FIT = 0.7;
+        const site = document.querySelector('.dig-site');
+        function fitHoles() {
+            const scale = parseFloat(getComputedStyle(site).getPropertyValue('--s')) || 1;
+            const slot = 150 * scale;
+            const room = Math.max(0, list.clientWidth - 110 * scale);
+            const finished = list.querySelectorAll('.hole:not(.current)');
+            const shown = Math.min(finished.length, Math.floor(room / (slot * MIN_FIT)));
+            finished.forEach((li, i) => { li.hidden = i < finished.length - shown; });
+            const fs = shown ? Math.min(1, room / (shown * slot)) : 1;
+            site.style.setProperty('--fs', fs.toFixed(3));
+        }
+        fitHoles();
+        new ResizeObserver(fitHoles).observe(list);
+    </script>
 </body>
 </html>
