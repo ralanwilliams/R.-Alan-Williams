@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Cv.Data</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Migration SQL ships inside the assembly; loaded by file name in SqlScript. -->
+    <EmbeddedResource Include="Migrations\Sql\*.sql" LogicalName="%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>
