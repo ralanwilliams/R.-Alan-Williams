@@ -36,6 +36,11 @@ body {
   .cv-preview { max-width: none; padding: 10mm 12mm; }
 }
 
+/* The public HTML download on a phone: the page is narrower than the CV, so keep text off the edges. */
+@media screen and (max-width: 600px) {
+  .cv:not(.cv-preview) { padding: 24px 16px; }
+}
+
 h1, h2, h3, p, ul { margin: 0; font-size: inherit; }
 
 /* Header */

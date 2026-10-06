@@ -191,6 +191,20 @@ public class HtmlRendererTests
         Assert.Contains("<style>", inlined);
         Assert.Contains("@page", HtmlRenderer.Css);
     }
+
+    [Fact]
+    public void A_download_is_a_standalone_file_that_fits_a_phone()
+    {
+        var html = Render(TestDraft.Sample().Draft, "en");
+
+        // Served as-is at /cv?format=html: nothing may be fetched from elsewhere, and nothing runs.
+        Assert.DoesNotContain("<link", html);
+        Assert.DoesNotContain("src=", html);
+        Assert.DoesNotContain("url(", html);
+        Assert.DoesNotContain("@import", html);
+        Assert.DoesNotContain("<script", html);
+        Assert.Contains("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">", html);
+    }
 }
 
 public class MessagesTests

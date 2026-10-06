@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-06
-- **Implementation:** planned: `src/Cv.Core/Rendering` (Markdown renderer), `src/Cv.Data/Migrations` (stored renders, `cv_public` role), `src/Cv.Editor` (rendering on publish), `functions/cv` (the public endpoint), a keep-alive Worker
+- **Implementation:** `src/Cv.Core/Rendering` (`MarkdownRenderer`); planned: `src/Cv.Data/Migrations` (stored renders, `cv_public` role), `src/Cv.Editor` (rendering on publish), `functions/cv` (the public endpoint), a keep-alive Worker
 
 ## Context
 

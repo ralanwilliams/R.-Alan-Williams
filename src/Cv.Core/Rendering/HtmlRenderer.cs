@@ -22,7 +22,7 @@ public sealed record RenderOptions(bool Preview = false, string? StylesheetHref 
 public static class HtmlRenderer
 {
     /// <summary>Recorded with stored renders (<c>cv_renders.renderer_version</c>). Bump whenever the output changes.</summary>
-    public const string RendererVersion = "html/2";
+    public const string RendererVersion = "html/3";
 
     private static readonly Lazy<string> Stylesheet = new(() =>
     {
@@ -45,6 +45,7 @@ public static class HtmlRenderer
         var title = name is null ? "CV" : context.Messages.DocumentTitle.Replace("{name}", name);
 
         html.Append("<!doctype html>\n<html lang=\"").Append(Encode(document.Locale.Code)).Append("\">\n<head>\n<meta charset=\"utf-8\">\n");
+        html.Append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n");
         html.Append("<title>").Append(Encode(title)).Append("</title>\n");
         if (options.StylesheetHref is { } href)
         {
@@ -56,7 +57,7 @@ public static class HtmlRenderer
         }
         html.Append("</head>\n<body>\n<main class=\"cv").Append(options.Preview ? " cv-preview" : "").Append("\">\n");
 
-        if (document.Nodes.FirstOrDefault(n => n.Depth == 0) is { IsHidden: false } root)
+        if (context.Tree.Root is { } root)
         {
             RenderTopLevel(html, context, context.ChildrenOf(root.Node.Id));
         }
@@ -65,39 +66,20 @@ public static class HtmlRenderer
         return html.ToString();
     }
 
-    private sealed class RenderContext
+    private sealed class RenderContext(LocalizedDocument document, RenderOptions options, Messages messages)
     {
-        private readonly Dictionary<Guid, List<LocalizedNode>> _children = [];
+        public VisibleTree Tree { get; } = new(document);
+        public string Locale { get; } = document.Locale.Code;
+        public RenderOptions Options { get; } = options;
+        public Messages Messages { get; } = messages;
 
-        public RenderContext(LocalizedDocument document, RenderOptions options, Messages messages)
-        {
-            Locale = document.Locale.Code;
-            Options = options;
-            Messages = messages;
-            foreach (var node in document.Nodes)
-            {
-                if (node.Node.ParentId is { } parentId && !node.IsHidden)
-                {
-                    if (!_children.TryGetValue(parentId, out var list))
-                    {
-                        _children[parentId] = list = [];
-                    }
-                    list.Add(node); // document order is preserved
-                }
-            }
-        }
-
-        public string Locale { get; }
-        public RenderOptions Options { get; }
-        public Messages Messages { get; }
-
-        public IReadOnlyList<LocalizedNode> ChildrenOf(Guid id) => _children.GetValueOrDefault(id) ?? [];
+        public IReadOnlyList<LocalizedNode> ChildrenOf(Guid id) => Tree.ChildrenOf(id);
     }
 
     /// <summary>Name, headline and contacts form the header; sections follow.</summary>
     private static void RenderTopLevel(StringBuilder html, RenderContext context, IReadOnlyList<LocalizedNode> nodes)
     {
-        var header = nodes.TakeWhile(n => n.Node.Type is "name" or "headline" or "contact").ToList();
+        var header = nodes.TakeWhile(VisibleTree.IsHeader).ToList();
         if (header.Count > 0)
         {
             html.Append("<header class=\"cv-header\">\n");
@@ -168,9 +150,6 @@ public static class HtmlRenderer
         _ => null,
     };
 
-    /// <summary>Header types are pulled out of an entry's children into its two header lines.</summary>
-    private static bool IsEntryHeader(LocalizedNode node) => node.Node.Type is "subtitle" or "location";
-
     private static void RenderNode(StringBuilder html, RenderContext context, LocalizedNode node)
     {
         var attributes = Attributes(context, node);
@@ -192,7 +171,7 @@ public static class HtmlRenderer
             case "entry":
                 html.Append("<article class=\"cv-entry\"").Append(attributes).Append(">\n");
                 RenderEntryHeader(html, context, node, children);
-                RenderNodes(html, context, children.Where(c => !IsEntryHeader(c)).ToList());
+                RenderNodes(html, context, children.Where(c => !VisibleTree.IsEntryHeader(c)).ToList());
                 html.Append("</article>\n");
                 break;
             case "subtitle" or "location":
@@ -230,7 +209,7 @@ public static class HtmlRenderer
     /// </summary>
     private static void RenderEntryHeader(StringBuilder html, RenderContext context, LocalizedNode entry, IReadOnlyList<LocalizedNode> children)
     {
-        var where = children.Where(c => IsEntryHeader(c) && HasVisibleContent(context, c))
+        var where = children.Where(c => VisibleTree.IsEntryHeader(c) && HasVisibleContent(context, c))
             .OrderBy(c => c.Node.Type == "location") // organisation first
             .ToList();
         if (where.Count > 0)
