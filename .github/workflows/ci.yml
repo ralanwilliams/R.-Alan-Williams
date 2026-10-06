@@ -1,0 +1,43 @@
+# Builds everything and runs every test suite on each push to master and each pull request.
+# The integration tests get PostgreSQL 17 from Testcontainers (Docker is available on
+# GitHub-hosted Ubuntu runners); CV_TEST_REQUIRE_DATABASE makes a missing database a failure.
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Restore tools
+        run: dotnet tool restore
+
+      - name: Build (warnings are errors)
+        run: dotnet build Cv.slnx --configuration Release -warnaserror
+
+      - name: EF model matches the migration snapshot
+        run: dotnet ef migrations has-pending-model-changes --project src/Cv.Data --startup-project src/Cv.Migrator --configuration Release --no-build
+
+      - name: .NET tests (unit, HTTP, and PostgreSQL integration)
+        run: dotnet test --solution Cv.slnx --configuration Release --no-build
+        env:
+          CV_TEST_REQUIRE_DATABASE: '1'
+
+      - name: Browser-side model tests
+        run: node --test "tests/Cv.Editor.Js/*.test.mjs"

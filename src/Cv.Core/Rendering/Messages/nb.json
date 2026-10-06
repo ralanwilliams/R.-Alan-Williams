@@ -1,0 +1,21 @@
+{
+  "months": [
+    "jan.",
+    "feb.",
+    "mars",
+    "apr.",
+    "mai",
+    "juni",
+    "juli",
+    "aug.",
+    "sep.",
+    "okt.",
+    "nov.",
+    "des."
+  ],
+  "present": "nå",
+  "dateRange": "{start} – {end}",
+  "documentTitle": "{name} – CV",
+  "missing": "Mangler tekst",
+  "label": "{label}:"
+}

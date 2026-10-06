@@ -16,3 +16,6 @@ cv-migration.sql
 .env.*
 !.env.example
 .dev.vars
+
+# Personal source material (e.g. the original CV used to seed version 1). Never commit.
+seed/

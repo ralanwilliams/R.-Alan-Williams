@@ -8,25 +8,25 @@ A CV usually lives as a pile of copies: the PDF sent last spring, the Word file 
 
 ## Status
 
-Work in progress. The data layer is built; the editor and renderer come next.
+Work in progress. The data layer and the editor are built; public download links come next.
 
 | Part | State |
 |---|---|
 | Content model and database schema | Done |
-| Database rules: history, translations, publishing | Done, with 56 schema tests |
+| Database rules: history, translations, publishing | Done, with 54 schema tests |
 | Migrations to Supabase | Done |
-| Editor (edit, save, publish) | Planned |
-| Renderer (HTML and PDF per language) | Planned |
+| Editor (edit, save, publish, history, restore) | Done: a local web app ([guide](docs/cv-editor.md)) |
+| Renderer (HTML and PDF per language) | Done for the editor's preview and downloads; storing published PDFs is next |
 | Public download links | Planned |
 
 ## How it works
 
 ```mermaid
 flowchart LR
-    E["Editor<br/>(planned)"] -- Save --> V[("Versions<br/>immutable snapshots")]
+    E["Editor<br/>(local web app)"] -- Save --> V[("Versions<br/>immutable snapshots")]
+    E -- "live preview, PDF" --> R["Renderer<br/>(HTML, printed by Chromium)"]
     V -- "Publish, per language" --> P[("Publication log")]
-    P --> R["Renderer<br/>(planned)"]
-    R --> U["/cv/en.pdf<br/>/cv/nb.pdf<br/>/cv/fr.pdf"]
+    P -.-> U["/cv/en.pdf<br/>/cv/nb.pdf<br/>/cv/fr.pdf<br/>(planned)"]
 ```
 
 - **Nothing is overwritten.** Each save stores a complete new version, so history, diffs between any two versions and restores are correct by construction.
@@ -34,12 +34,16 @@ flowchart LR
 - **Stale translations are flagged.** Each translation remembers the English text it came from, so the editor knows when the English has changed since.
 - **Publishing is per language and reversible.** English can go live while French is still being translated, and rolling back is just publishing an older version.
 - **The database enforces the rules.** Constraints and triggers in PostgreSQL guard every invariant, so even two open browser tabs can't overwrite each other's work.
+- **The editor knows before the database does.** While you type, it shows which lines are missing or out of date in each language and renders the result, using C# twins of the database's rules. A test checks that the twins and the database agree.
 
 ## Tech stack
 
-- .NET 10 and EF Core 10
+- .NET 10, EF Core 10 and ASP.NET Core minimal APIs
 - PostgreSQL on Supabase, in a dedicated `cv` schema kept out of Supabase's public APIs
 - Reviewed SQL for constraints, triggers and views, covered by a SQL test suite
+- Plain HTML, CSS and JavaScript modules for the editor page (no front-end build)
+- PDFs printed by headless Chrome or Edge through PuppeteerSharp
+- Tests: xUnit v3, Testcontainers (PostgreSQL 17), `WebApplicationFactory` and `node:test`, run by GitHub Actions
 
 ## Design decisions
 
@@ -49,17 +53,21 @@ Each significant decision is written up as an Architecture Decision Record (ADR)
 | ADR | Decision | Status | Date |
 |---|---|---|---|
 | [0001](docs/adr/0001-cv-content-model.md) | CV content model: an immutable, versioned tree with per-locale text | Accepted | 2026-10-06 |
+| [0002](docs/adr/0002-cv-editor.md) | CV editor: a local web app over the versioned store | Accepted | 2026-10-06 |
 <!-- adr-index:end -->
 
 ## Repository layout
 
 ```
 ├── public/              the website (ralanwilliams.com)
-├── src/Cv.Data/         EF Core model, configurations and migrations
+├── src/Cv.Core/         document workflow: drafts, ordering, hashing, validation, localisation, rendering
+├── src/Cv.Data/         EF Core model, migrations, and the store
+├── src/Cv.Editor/       the editor: HTTP API, security, PDF output, and the page
 ├── src/Cv.Migrator/     console app that applies migrations
-├── tests/db/            SQL schema tests
+├── tests/               unit, PostgreSQL integration, HTTP and browser-model tests, plus SQL schema tests
 ├── docs/adr/            Architecture Decision Records
 ├── docs/cv-database.md  database setup and migration guide
+├── docs/cv-editor.md    editor setup, use and tests
 └── scripts/             helper scripts
 ```
 
@@ -68,9 +76,15 @@ Each significant decision is written up as an Architecture Decision Record (ADR)
 ```powershell
 dotnet tool restore
 dotnet build Cv.slnx
+dotnet test                                     # integration tests need Docker or CV_TEST_POSTGRES
 ```
 
-Connecting to Supabase, applying migrations and running the schema tests are covered step by step in [docs/cv-database.md](docs/cv-database.md).
+Connecting to Supabase, applying migrations and running the schema tests are covered step by step in [docs/cv-database.md](docs/cv-database.md). Running and using the editor is in [docs/cv-editor.md](docs/cv-editor.md):
+
+```powershell
+. ./scripts/Import-DotEnv.ps1
+dotnet run --project src/Cv.Editor              # then open http://localhost:5180
+```
 
 ## Writing an ADR
 

@@ -5,7 +5,14 @@
     <File Path="global.json" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/Cv.Core/Cv.Core.csproj" />
     <Project Path="src/Cv.Data/Cv.Data.csproj" />
+    <Project Path="src/Cv.Editor/Cv.Editor.csproj" />
     <Project Path="src/Cv.Migrator/Cv.Migrator.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Cv.Core.Tests/Cv.Core.Tests.csproj" />
+    <Project Path="tests/Cv.Data.Tests/Cv.Data.Tests.csproj" />
+    <Project Path="tests/Cv.Editor.Tests/Cv.Editor.Tests.csproj" />
   </Folder>
 </Solution>

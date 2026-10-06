@@ -16,7 +16,10 @@
 
 \set ON_ERROR_STOP on
 SET client_min_messages = notice;
-\o /dev/null
+-- Query results are noise; only the NOTICE lines matter. Send them to the null
+-- device, which is NUL on Windows. :VERSION is the psql client's own build string.
+SELECT CASE WHEN :'VERSION' ~* '(windows|mingw|msvc)' THEN 'NUL' ELSE '/dev/null' END AS null_device \gset
+\o :null_device
 
 BEGIN;
 
