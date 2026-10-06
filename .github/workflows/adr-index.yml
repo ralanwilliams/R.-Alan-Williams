@@ -1,0 +1,36 @@
+# Keeps the "Design decisions" table in README.md in sync with docs/adr/.
+# Add or edit an ADR, push to master, and this commits the refreshed table.
+name: ADR index
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'docs/adr/**'
+      - 'README.md'
+      - 'scripts/Update-AdrIndex.ps1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Regenerate ADR table
+        shell: pwsh
+        run: ./scripts/Update-AdrIndex.ps1
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- README.md; then
+            echo "ADR index already up to date."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898283+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'docs(adr): Update ADR index' -- README.md
+          git push
