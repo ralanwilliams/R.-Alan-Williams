@@ -26,6 +26,10 @@ public sealed class PostgresServer : IAsyncLifetime
     private const string AppRole = "cv_test_app";
     private const string AppPassword = "cv_test_app";
 
+    // A login in cv_public, like the public site's cv_web role (ADR 0003 §3).
+    private const string PublicRole = "cv_test_web";
+    private const string PublicPassword = "cv_test_web";
+
     private readonly List<string> _databases = [];
     private PostgreSqlContainer? _container;
     private string? _adminConnectionString;
@@ -66,8 +70,15 @@ public sealed class PostgresServer : IAsyncLifetime
                 IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{AppRole}') THEN
                     CREATE ROLE {AppRole} LOGIN PASSWORD '{AppPassword}' IN ROLE cv_app;
                 END IF;
+                IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{PublicRole}') THEN
+                    CREATE ROLE {PublicRole} LOGIN PASSWORD '{PublicPassword}' IN ROLE cv_public;
+                END IF;
             END $$
             """,
+            // Roles outlive databases on a reused CV_TEST_POSTGRES server, and dropping cv_app or
+            // cv_public (a down migration) silently ends these memberships, so grant them every run.
+            $"GRANT cv_app TO {AppRole}",
+            $"GRANT cv_public TO {PublicRole}",
             $"INSERT INTO cv.users (id, email, display_name) VALUES ('{UserId}', 'ada@example.com', 'Ada Lovelace')");
 
         NpgsqlConnection.ClearAllPools(); // a template database must have no open connections
@@ -90,7 +101,8 @@ public sealed class PostgresServer : IAsyncLifetime
 
         var admin = WithDatabase(_adminConnectionString!, name);
         var app = new NpgsqlConnectionStringBuilder(admin) { Username = AppRole, Password = AppPassword }.ConnectionString;
-        return new TestDatabase(admin, app);
+        var web = new NpgsqlConnectionStringBuilder(admin) { Username = PublicRole, Password = PublicPassword }.ConnectionString;
+        return new TestDatabase(admin, app, web);
     }
 
     public async ValueTask DisposeAsync()
@@ -127,7 +139,8 @@ public sealed class PostgresServer : IAsyncLifetime
 
 /// <param name="AdminConnectionString">The schema owner, for checks the app role may not do.</param>
 /// <param name="AppConnectionString">A member of cv_app, as the editor connects in production.</param>
-public sealed record TestDatabase(string AdminConnectionString, string AppConnectionString)
+/// <param name="PublicConnectionString">A member of cv_public, as the public site connects in production.</param>
+public sealed record TestDatabase(string AdminConnectionString, string AppConnectionString, string PublicConnectionString)
 {
     /// <summary>A store with empty caches, as after an editor restart.</summary>
     public CvStore CreateStore() => new(new ContextFactory(AppConnectionString));

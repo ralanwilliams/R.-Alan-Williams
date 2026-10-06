@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-06
-- **Implementation:** `src/Cv.Core/Rendering` (`MarkdownRenderer`); planned: `src/Cv.Data/Migrations` (stored renders, `cv_public` role), `src/Cv.Editor` (rendering on publish), `functions/cv` (the public endpoint), a keep-alive Worker
+- **Implementation:** `src/Cv.Core/Rendering` (`MarkdownRenderer`), `src/Cv.Data/Migrations/*_StoreRenderContent.cs` (stored files, `cv_public` role and function); planned: the publish rule, `src/Cv.Editor` (rendering on publish), `functions/cv` (the public endpoint), a keep-alive Worker
 
 ## Context
 
@@ -39,7 +39,7 @@ A new NOLOGIN role, **`cv_public`**, has no access to any table. It may only EXE
 
 - With no version number it serves the version `cv.cv_published` lists for that locale.
 - With a version number it serves that version only if a `cv_publications` row has **ever** published it for that locale. A draft returns nothing, whether or not someone guesses its number.
-- It returns the newest render's bytes, hash and version number, or no row.
+- It returns the newest render's bytes, hash and version number, plus the CV's name line for the download's file name, or no row.
 
 The function is `SECURITY DEFINER` with `search_path = ''`, owned by the schema owner, like the read-side helpers in ADR 0001 §11. The site logs in as **`cv_web`**, a member of `cv_public`, created by hand like `cv_api` (it has a password, so it does not belong in a migration). Its connection string is a Cloudflare secret. If it leaks, the holder can read what is already public.
 
