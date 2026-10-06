@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CV editor · Core Sample</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/editor.css">
+  <script type="module" src="js/editor.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">CV editor</span>
+    </div>
+
+    <nav class="locale-tabs" role="tablist" aria-label="Language" id="locale-tabs"></nav>
+
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+
+    <div class="actions">
+      <button type="button" class="button ghost" id="history-button">History</button>
+      <button type="button" class="button ghost" id="pdf-button">Download PDF</button>
+      <button type="button" class="button ghost" id="discard-button">Discard</button>
+      <button type="button" class="button" id="save-button">Save</button>
+      <button type="button" class="button primary" id="publish-button">Save &amp; publish…</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section class="editor-pane" aria-label="CV text">
+      <div class="issues" id="issues" hidden></div>
+      <ol class="lines" id="lines"></ol>
+      <div class="add-bar" id="add-bar"></div>
+      <p class="hint">
+        <kbd>Enter</kbd> adds a line after bullets, skills and contacts ·
+        <kbd>Backspace</kbd> on an empty line removes it ·
+        <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> moves a line ·
+        <kbd>Ctrl</kbd>+<kbd>S</kbd> saves
+      </p>
+    </section>
+
+    <section class="preview-pane" aria-label="Preview">
+      <iframe id="preview" title="Preview of the CV" sandbox="allow-same-origin"></iframe>
+    </section>
+  </main>
+
+  <div id="line-menu" class="menu" popover></div>
+
+  <dialog id="save-dialog" class="dialog">
+    <form method="dialog" id="save-form">
+      <h2 id="save-title">Save a new version</h2>
+      <label class="field">
+        <span>What changed? <small>(optional)</small></span>
+        <input type="text" id="save-summary" maxlength="200" autocomplete="off">
+      </label>
+      <fieldset class="publish-locales" id="publish-locales">
+        <legend>Publish these languages</legend>
+        <div id="publish-locale-list"></div>
+      </fieldset>
+      <div class="dialog-actions">
+        <button type="button" class="button ghost" value="cancel" id="save-cancel">Cancel</button>
+        <button type="submit" class="button primary" id="save-confirm">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirm-dialog" class="dialog">
+    <form method="dialog">
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-message"></p>
+      <div class="dialog-actions">
+        <button type="submit" class="button ghost" value="cancel">Cancel</button>
+        <button type="submit" class="button primary" value="ok" id="confirm-ok">OK</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="history-dialog" class="dialog dialog-wide">
+    <div class="history-head">
+      <h2>History</h2>
+      <button type="button" class="button ghost" id="history-close">Close</button>
+    </div>
+    <div class="live-now" id="live-now"></div>
+    <div class="history-body">
+      <ol class="versions" id="versions"></ol>
+      <div class="changes" id="changes"><p class="muted">Choose a version to see what changed in it.</p></div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="alert" hidden></div>
+</body>
+</html>

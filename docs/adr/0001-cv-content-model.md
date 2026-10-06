@@ -105,6 +105,8 @@ Document order is `ORDER BY sort_path COLLATE "C"`. The explicit collation matte
 
 The seeded grammar is acyclic, so cycles are impossible today. The cycle check still exists because the grammar is data and may change; the test suite proves it works by temporarily allowing a recursive type.
 
+It has changed once so far: a `location` type under `entry` was added by a migration ([ADR 0002](0002-cv-editor.md) §11).
+
 ### 10. Integrity lives in the database, workflow in the application
 
 Every rule above is enforced by PostgreSQL: CHECKs, keys, triggers and grants. Application bugs, manual SQL and future clients all hit the same walls.
@@ -142,7 +144,7 @@ EF Core cannot express CHECK constraints across tables, expression or partial in
 
 - The **EF model** (entities and configurations) mirrors every table, column, key, foreign key and plain index, with explicit names. The model snapshot matches it, so future `dotnet ef migrations add` produces correct diffs.
 - The **initial migration** runs one reviewed SQL script, embedded in the assembly, inside EF's migration transaction. Either all of it applies or none of it does.
-- `tests/db/schema-tests.sql` builds a three-language CV and tries to break every invariant (56 checks). It runs in a transaction and rolls back.
+- `tests/db/schema-tests.sql` builds a three-language CV and tries to break every invariant (54 checks; 2 of them only apply on Supabase). It runs in a transaction and rolls back.
 
 Later migrations can be ordinary EF migrations. When one needs a constraint, trigger or view, it adds `migrationBuilder.Sql(...)` the same way.
 
@@ -179,8 +181,8 @@ Later migrations can be ordinary EF migrations. When one needs a constraint, tri
 
 ## Follow-ups
 
-- **Editor save path:** compute `content_hash` over a canonical serialisation of nodes and contents; on a unique violation of `ux_cv_versions_version_number` or `ux_cv_versions_previous_version_id`, reload instead of retrying.
-- **Renderer:** template strings in message files; `lang` set on the HTML before PDF generation for hyphenation; fonts covering æ ø å and French accents; a narrow no-break space before `: ; ! ?` in French; `Content-Disposition` with `filename*=UTF-8''…` and an ASCII fallback; `renderer_version` bumped whenever output changes.
+- **Editor save path:** compute `content_hash` over a canonical serialisation of nodes and contents; on a unique violation of `ux_cv_versions_version_number` or `ux_cv_versions_previous_version_id`, reload instead of retrying. *Done: [ADR 0002](0002-cv-editor.md) §4, §5 and §7.*
+- **Renderer:** template strings in message files; `lang` set on the HTML before PDF generation for hyphenation; fonts covering æ ø å and French accents; a narrow no-break space before `: ; ! ?` in French; `Content-Disposition` with `filename*=UTF-8''…` and an ASCII fallback; `renderer_version` bumped whenever output changes. *Done for the editor's preview and downloads: [ADR 0002](0002-cv-editor.md) §8. Storing published renders in `cv_renders` is still open.*
 - **Caching:** short `Cache-Control` on `/cv/*.pdf` and a CDN purge on publish.
-- **Auth:** passkey, OAuth or an access proxy in front of the editor. No password table.
+- **Auth:** passkey, OAuth or an access proxy in front of the editor. No password table. *Deferred: the editor runs locally, loopback only ([ADR 0002](0002-cv-editor.md) §1–2). Needed if it is ever hosted.*
 - **Downloads:** count them in `audit_log` without storing IP addresses (personal data under GDPR).

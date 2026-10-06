@@ -1,18 +1,19 @@
 # CV database: setup and migrations
 
-The CV content store is a PostgreSQL schema (`cv`) on Supabase, managed with EF Core migrations. The design and its reasoning are in [ADR 0001](adr/0001-cv-content-model.md).
+The CV content store is a PostgreSQL schema (`cv`) on Supabase, managed with EF Core migrations. The design and its reasoning are in [ADR 0001](adr/0001-cv-content-model.md). The editor that writes to it is covered in [cv-editor.md](cv-editor.md).
 
 ```
 Cv.slnx
 ├── src/Cv.Data/                  EF Core model (entities, configurations, DbContext)
 │   └── Migrations/
 │       ├── 20261006120000_InitialCreate.cs
+│       ├── 20261006134243_AddLocationNodeType.cs    adds the `location` line type (ADR 0002 §11)
 │       ├── CvDbContextModelSnapshot.cs
 │       └── Sql/                  reviewed SQL run by the migration (up + down)
 ├── src/Cv.Migrator/              console app: applies migrations; startup project for dotnet-ef
 ├── scripts/Import-DotEnv.ps1     loads .env into the current PowerShell session
 ├── .env.example                  template for the git-ignored .env (secrets)
-└── tests/db/schema-tests.sql     56 checks that try to break every rule (rolls back)
+└── tests/db/schema-tests.sql     54 checks that try to break every rule (rolls back)
 ```
 
 ## 1. Tooling
@@ -32,7 +33,7 @@ Package versions are pinned centrally in `Directory.Packages.props`:
 | Microsoft.EntityFrameworkCore, .Relational, .Design | 10.0.12 |
 | Npgsql.EntityFrameworkCore.PostgreSQL | 10.0.3 |
 
-Keep `dotnet-ef` in `.config/dotnet-tools.json` on the same version as the EF Core packages. To upgrade, bump both together: `dotnet tool update dotnet-ef --version <x>` plus the `PackageVersion` entries.
+Keep `dotnet-ef` in `.config/dotnet-tools.json` on the same version as the EF Core packages. To upgrade, bump both together: `dotnet tool update dotnet-ef --version <x>` plus the `PackageVersion` entries. The editor's and the tests' packages are listed in [cv-editor.md](cv-editor.md#tooling).
 
 ## 2. Build and sanity-check (no database needed)
 
@@ -103,7 +104,7 @@ dotnet run --project src/Cv.Migrator -- --list   # show applied/pending, change 
 dotnet run --project src/Cv.Migrator             # apply
 ```
 
-The whole migration runs in one transaction. If anything fails, nothing is left half-created.
+Each migration runs in one transaction. If anything fails, nothing is left half-created. Run the same commands again whenever a new migration is added: `--list` shows which ones are pending.
 
 ## 5. Verify in Supabase
 
@@ -131,23 +132,25 @@ VALUES (gen_random_uuid(), '<your email>', 'R. Alan Williams')
 RETURNING id;
 ```
 
-**Create a login for the future app**, so it never connects as `postgres`. The app gets only what `cv_app` allows: read everything, insert history, and nothing else.
+**Create the editor's login**, so it never connects as `postgres`. It gets only what `cv_app` allows: read everything, insert history, and nothing else.
 
 ```sql
 CREATE ROLE cv_api LOGIN PASSWORD '<long random password>' IN ROLE cv_app;
 ```
 
-Through the session pooler, the app's username is then `cv_api.<project-ref>`.
+Through the session pooler, its username is then `cv_api.<project-ref>`. Put its connection string in `.env` as `CV_API_CONNECTION` (see [cv-editor.md](cv-editor.md#2-configure)).
 
 ## 7. Run the schema tests (optional)
 
-The script builds a three-language CV and tries to break every invariant. It runs in a single transaction and **rolls back**, so it leaves nothing behind. Run it as the schema owner (`postgres`):
+The script builds a three-language CV and tries to break every invariant. It runs in a single transaction and **rolls back**, so it leaves nothing behind. Run it as the schema owner (`postgres`), preferably against a local PostgreSQL 15+ or a throwaway Supabase project rather than the live one: while it runs it holds locks on the `cv` tables.
 
 ```powershell
-psql "host=aws-0-<region>.pooler.supabase.com port=5432 dbname=postgres user=postgres.<project-ref> sslmode=require" -f tests/db/schema-tests.sql
+psql "host=<host> port=5432 dbname=postgres user=<owner> sslmode=require" -f tests/db/schema-tests.sql
 ```
 
-You should see 56 `ok` lines and `All schema tests passed. Rolling back.`
+You should see `All schema tests passed. Rolling back.` after 54 `ok` lines on Supabase, or 52 on plain PostgreSQL, where the two checks on Supabase's `anon` and `authenticated` roles are skipped. The script works with psql on Windows, macOS and Linux.
+
+The .NET integration tests (`tests/Cv.Data.Tests`) apply the migration to a fresh database for every test and exercise the store against it. See [cv-editor.md](cv-editor.md#run-the-tests).
 
 ## Making future schema changes
 

@@ -25,10 +25,16 @@ public sealed class CvDbContext(DbContextOptions<CvDbContext> options) : DbConte
     public DbSet<AuditLogEntry> AuditLog => Set<AuditLogEntry>();
 
     /// <summary>Builds options with the settings every caller (app, migrator, design-time tools) must share.</summary>
-    public static DbContextOptions<CvDbContext> CreateOptions(string connectionString) =>
-        new DbContextOptionsBuilder<CvDbContext>()
-            .UseNpgsql(connectionString, npgsql => npgsql.MigrationsHistoryTable(MigrationsHistoryTable, Schema))
-            .Options;
+    public static DbContextOptions<CvDbContext> CreateOptions(string connectionString)
+    {
+        var builder = new DbContextOptionsBuilder<CvDbContext>();
+        Configure(builder, connectionString);
+        return builder.Options;
+    }
+
+    /// <summary>Applies the shared settings to an existing builder, e.g. the one <c>AddDbContextFactory</c> passes in.</summary>
+    public static void Configure(DbContextOptionsBuilder builder, string connectionString) =>
+        builder.UseNpgsql(connectionString, npgsql => npgsql.MigrationsHistoryTable(MigrationsHistoryTable, Schema));
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

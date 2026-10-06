@@ -1,0 +1,21 @@
+{
+  "months": [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec"
+  ],
+  "present": "Present",
+  "dateRange": "{start} – {end}",
+  "documentTitle": "{name} – CV",
+  "missing": "Missing text",
+  "label": "{label}:"
+}

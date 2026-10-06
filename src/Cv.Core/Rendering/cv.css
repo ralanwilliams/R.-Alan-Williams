@@ -1,0 +1,113 @@
+/*
+ * CV stylesheet: shared by the editor preview and PDF output.
+ * Mirrors the original Word CV: Calibri 11 pt, 1.15 line spacing, centred header,
+ * bold uppercase section headings, "Organisation | Location" over "Title | dates".
+ * Page: A4 with the original's margins (1 in top and bottom, 1.25 in sides).
+ * Fonts are local only (Calibri ships with Windows and Office; Carlito is its metric twin
+ * on Linux), so PDF generation needs no network.
+ */
+@page {
+  size: A4;
+  margin: 25.4mm 31.75mm;
+}
+
+:root {
+  --ink: #000;
+  --muted: #444;
+  --font: Calibri, Carlito, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html { color: var(--ink); background: #fff; }
+
+body {
+  margin: 0;
+  font: 11pt/1.15 var(--font);
+  hyphens: auto; /* language from the lang attribute; Norwegian compounds need it */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.cv { max-width: 146.5mm; margin: 0 auto; }
+
+@media screen {
+  .cv { padding: 14mm 0; }
+  .cv-preview { max-width: none; padding: 10mm 12mm; }
+}
+
+h1, h2, h3, p, ul { margin: 0; font-size: inherit; }
+
+/* Header */
+.cv-header { text-align: center; margin-bottom: 8pt; }
+
+.cv-name {
+  margin-bottom: 2pt;
+  font-size: 14pt;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.cv-headline { margin-bottom: 2pt; }
+
+.cv-contacts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 10pt;
+}
+/* Each contact stays whole; the "|" sticks to the item before it (no-break space), so a
+   wrapped line never starts with a separator. The space after it comes from the markup. */
+.cv-contacts li { display: inline; white-space: nowrap; }
+.cv-contacts li:not(:last-child)::after { content: "\00a0|"; }
+.cv-contacts a { color: inherit; text-decoration: none; }
+
+/* Sections */
+.cv-section-title {
+  margin: 6pt 0 3pt;
+  font-size: 12pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  break-after: avoid;
+}
+
+.cv-section > .cv-paragraph { margin-bottom: 8pt; }
+
+/* Entries: "ORGANISATION | Location" then "Title | dates" */
+.cv-entry { margin-bottom: 4pt; }
+
+.cv-entry-where { break-after: avoid; }
+.cv-subtitle { font-weight: bold; text-transform: uppercase; }
+
+.cv-entry-what {
+  margin-bottom: 6pt;
+  font-weight: normal;
+  break-after: avoid;
+}
+.cv-entry-title { font-weight: bold; }
+
+.cv-sep { white-space: pre; }
+
+.cv-entry > .cv-paragraph { margin-bottom: 3pt; }
+
+.cv-bullets { margin: 0 0 3pt; padding-left: 18pt; }
+.cv-bullets li { margin-bottom: 3pt; break-inside: avoid; }
+
+/* Skills: "Label: a, b, c" */
+.cv-skill-group, .cv-skills { margin-bottom: 4pt; }
+.cv-skill-group-label { font-weight: bold; }
+
+/* Editor preview only */
+.cv-missing {
+  padding: 0 1.2mm;
+  border-radius: 1mm;
+  background: #fde2e1;
+  color: #9b1c1c;
+  font-style: italic;
+  font-weight: normal;
+  text-transform: none;
+}
+
+.cv-preview [data-stale="true"] { text-decoration: underline dotted #b7791f; text-underline-offset: 2px; }
+.cv-preview [data-node-id] { cursor: pointer; }
+.cv-preview [data-node-id].is-focused { outline: 2px solid #8fb3dc; outline-offset: 2px; border-radius: 2px; }

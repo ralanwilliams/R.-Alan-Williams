@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The CV domain: document model, ordering, hashing, validation, localisation and
+    rendering. No dependencies on purpose: everything here is pure and unit tested.
+  -->
+
+  <PropertyGroup>
+    <RootNamespace>Cv.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cv.Core.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Rendering\Messages\*.json" LogicalName="Cv.Core.Rendering.Messages.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Rendering\cv.css" LogicalName="Cv.Core.Rendering.cv.css" />
+  </ItemGroup>
+
+</Project>

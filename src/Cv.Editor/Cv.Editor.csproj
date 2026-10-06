@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- The CV editor: a local web app (loopback only) over the cv schema. See docs/adr/0002-cv-editor.md. -->
+
+  <PropertyGroup>
+    <RootNamespace>Cv.Editor</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cv.Core\Cv.Core.csproj" />
+    <ProjectReference Include="..\Cv.Data\Cv.Data.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PuppeteerSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cv.Editor.Tests" />
+  </ItemGroup>
+
+</Project>
