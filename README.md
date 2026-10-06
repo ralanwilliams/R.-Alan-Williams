@@ -17,7 +17,7 @@ Work in progress. The data layer and the editor are built; public download links
 | Migrations to Supabase | Done |
 | Editor (edit, save, publish, history, restore) | Done: a local web app ([guide](docs/cv-editor.md)) |
 | Renderer (HTML and PDF per language) | Done for the editor's preview and downloads; storing published PDFs is next |
-| Public download links | Planned |
+| Public download links | Designed ([ADR 0003](docs/adr/0003-public-cv-downloads.md)); in progress |
 
 ## How it works
 
@@ -54,6 +54,7 @@ Each significant decision is written up as an Architecture Decision Record (ADR)
 |---|---|---|---|
 | [0001](docs/adr/0001-cv-content-model.md) | CV content model: an immutable, versioned tree with per-locale text | Accepted | 2026-10-06 |
 | [0002](docs/adr/0002-cv-editor.md) | CV editor: a local web app over the versioned store | Accepted | 2026-10-06 |
+| [0003](docs/adr/0003-public-cv-downloads.md) | Public CV downloads: files stored on publish, served from the database | Accepted | 2026-10-06 |
 <!-- adr-index:end -->
 
 ## Repository layout

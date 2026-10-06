@@ -93,6 +93,8 @@ Public URLs:
 - `/cv.pdf` serves a fixed default locale. It does not use `Accept-Language`, because a link sent to a recruiter must always return the same file.
 - `/cv/v/{version_id}/{locale}.pdf` is a permalink to exactly what a given employer received. It is served only if that version was ever published for that locale, so drafts never leak through a guessable URL.
 
+[ADR 0003](0003-public-cv-downloads.md) §4 settles the final URLs. Permalinks use the version number instead of the id, which is safe because of the "ever published" rule above.
+
 ### 8. Sibling order uses fractional indexing
 
 `sort_key` is a base62 fractional index (`a0`, `a1`; inserting between them gives `a0V`), compared with the `"C"` collation. Inserting a bullet at the top changes one row instead of renumbering every sibling, so a diff reports one change, not ten. Siblings must have distinct keys: a unique index with `NULLS NOT DISTINCT`.
@@ -182,7 +184,7 @@ Later migrations can be ordinary EF migrations. When one needs a constraint, tri
 ## Follow-ups
 
 - **Editor save path:** compute `content_hash` over a canonical serialisation of nodes and contents; on a unique violation of `ux_cv_versions_version_number` or `ux_cv_versions_previous_version_id`, reload instead of retrying. *Done: [ADR 0002](0002-cv-editor.md) §4, §5 and §7.*
-- **Renderer:** template strings in message files; `lang` set on the HTML before PDF generation for hyphenation; fonts covering æ ø å and French accents; a narrow no-break space before `: ; ! ?` in French; `Content-Disposition` with `filename*=UTF-8''…` and an ASCII fallback; `renderer_version` bumped whenever output changes. *Done for the editor's preview and downloads: [ADR 0002](0002-cv-editor.md) §8. Storing published renders in `cv_renders` is still open.*
-- **Caching:** short `Cache-Control` on `/cv/*.pdf` and a CDN purge on publish.
+- **Renderer:** template strings in message files; `lang` set on the HTML before PDF generation for hyphenation; fonts covering æ ø å and French accents; a narrow no-break space before `: ; ! ?` in French; `Content-Disposition` with `filename*=UTF-8''…` and an ASCII fallback; `renderer_version` bumped whenever output changes. *Done for the editor's preview and downloads: [ADR 0002](0002-cv-editor.md) §8. Storing published renders in `cv_renders`: decided in [ADR 0003](0003-public-cv-downloads.md) §1–2.*
+- **Caching:** short `Cache-Control` on `/cv/*.pdf` and a CDN purge on publish. *Decided in [ADR 0003](0003-public-cv-downloads.md) §5: short edge caching, no purge.*
 - **Auth:** passkey, OAuth or an access proxy in front of the editor. No password table. *Deferred: the editor runs locally, loopback only ([ADR 0002](0002-cv-editor.md) §1–2). Needed if it is ever hosted.*
-- **Downloads:** count them in `audit_log` without storing IP addresses (personal data under GDPR).
+- **Downloads:** count them in `audit_log` without storing IP addresses (personal data under GDPR). *Deferred: [ADR 0003](0003-public-cv-downloads.md) §7.*

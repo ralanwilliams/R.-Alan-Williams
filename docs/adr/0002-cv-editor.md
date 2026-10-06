@@ -149,7 +149,7 @@ The author's existing CV had to become version 1. Two choices were made:
 
 ## Follow-ups
 
-- **Public PDFs:** store rendered PDFs on publish (`cv_renders`) and serve `/cv/{locale}.pdf` from the site. Open choice: either publishing writes files to object storage (e.g. Cloudflare R2), so the site holds no database secret, or the site queries Supabase per request. ADR 0001 §7 and its *Caching* follow-up apply.
+- **Public PDFs:** store rendered PDFs on publish (`cv_renders`) and serve `/cv/{locale}.pdf` from the site. Open choice: either publishing writes files to object storage (e.g. Cloudflare R2), so the site holds no database secret, or the site queries Supabase per request. ADR 0001 §7 and its *Caching* follow-up apply. *Decided in [ADR 0003](0003-public-cv-downloads.md): files are stored in the database on publish and the site queries it.*
 - **Auth**, if the editor is ever hosted: an access proxy or passkeys, as in ADR 0001.
 - **Autosave** of unsaved drafts in the browser, so a crash or a conflict reload loses nothing.
 - **Accessibility review** of the editor with a screen reader. Keyboard use, labels, focus states and reduced motion are in place, but have not been audited.
