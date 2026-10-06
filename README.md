@@ -13,7 +13,7 @@ Work in progress. The data layer and the editor are built; public download links
 | Part | State |
 |---|---|
 | Content model and database schema | Done |
-| Database rules: history, translations, publishing | Done, with 54 schema tests |
+| Database rules: history, translations, publishing | Done, with 70 schema tests |
 | Migrations to Supabase | Done |
 | Editor (edit, save, publish, history, restore) | Done: a local web app ([guide](docs/cv-editor.md)) |
 | Renderer (HTML and PDF per language) | Done for the editor's preview and downloads; storing published PDFs is next |

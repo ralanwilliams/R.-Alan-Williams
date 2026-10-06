@@ -16,11 +16,10 @@ internal sealed class CvRenderConfiguration : IEntityTypeConfiguration<CvRender>
         b.Property(x => x.Format).HasColumnName("format").HasColumnType("text");
         b.Property(x => x.RendererVersion).HasColumnName("renderer_version").HasColumnType("text");
         b.Property(x => x.ContentHash).HasColumnName("content_hash").HasColumnType("bytea");
-        b.Property(x => x.StorageKey).HasColumnName("storage_key").HasColumnType("text");
+        b.Property(x => x.Content).HasColumnName("content").HasColumnType("bytea");
         b.Property(x => x.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp with time zone")
             .HasDefaultValueSql("now()");
 
-        b.HasIndex(x => x.StorageKey).IsUnique().HasDatabaseName("ux_cv_renders_storage_key");
         b.HasIndex(x => x.LocaleCode).HasDatabaseName("ix_cv_renders_locale");
 
         b.HasOne<CvVersion>().WithMany().HasForeignKey(x => x.VersionId)

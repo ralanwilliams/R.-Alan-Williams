@@ -362,12 +362,52 @@ SELECT pg_temp.expect('publication history is kept',
     (SELECT count(*) FROM cv.cv_publications WHERE locale = 'nb') = 2);
 
 SELECT pg_temp.expect_error('render for the language-neutral locale', '23514', format(
-    $q$INSERT INTO cv.cv_renders (version_id, locale, format, renderer_version, content_hash, storage_key)
-       VALUES (%L, 'zxx', 'pdf', '1.0.0', sha256('pdf'), 'cv/x.pdf')$q$, pg_temp.id('v1')));
+    $q$INSERT INTO cv.cv_renders (version_id, locale, format, renderer_version, content_hash, content)
+       VALUES (%L, 'zxx', 'pdf', '1.0.0', sha256('pdf'), 'pdf')$q$, pg_temp.id('v1')));
 
 SELECT pg_temp.expect_error('unknown render format', '23514', format(
-    $q$INSERT INTO cv.cv_renders (version_id, locale, format, renderer_version, content_hash, storage_key)
-       VALUES (%L, 'en', 'docx', '1.0.0', sha256('docx'), 'cv/x.docx')$q$, pg_temp.id('v1')));
+    $q$INSERT INTO cv.cv_renders (version_id, locale, format, renderer_version, content_hash, content)
+       VALUES (%L, 'en', 'docx', '1.0.0', sha256('docx'), 'docx')$q$, pg_temp.id('v1')));
+
+SELECT pg_temp.expect_error('render whose hash does not match its content', '23514', format(
+    $q$INSERT INTO cv.cv_renders (version_id, locale, format, renderer_version, content_hash, content)
+       VALUES (%L, 'en', 'pdf', '1.0.0', sha256('other'), 'pdf')$q$, pg_temp.id('v1')));
+
+SELECT pg_temp.expect_error('empty render', '23514', format(
+    $q$INSERT INTO cv.cv_renders (version_id, locale, format, renderer_version, content_hash, content)
+       VALUES (%L, 'en', 'pdf', '1.0.0', sha256(''), '')$q$, pg_temp.id('v1')));
+
+-- --- public files (ADR 0003 §3) ------------------------------------------------------
+-- Published so far: en v1, fr v2 (current), nb v1 (since unpublished). v3 is a draft.
+
+INSERT INTO cv.cv_renders (version_id, locale, format, renderer_version, content_hash, content)
+VALUES (pg_temp.id('v1'), 'en', 'pdf', 'pdf/1', sha256('en v1 old'), 'en v1 old'),
+       (pg_temp.id('v1'), 'nb', 'pdf', 'pdf/1', sha256('nb v1'), 'nb v1'),
+       (pg_temp.id('v1'), 'fr', 'pdf', 'pdf/1', sha256('fr v1'), 'fr v1'),
+       (pg_temp.id('v2'), 'fr', 'pdf', 'pdf/1', sha256('fr v2'), 'fr v2'),
+       (pg_temp.id('v3'), 'en', 'pdf', 'pdf/1', sha256('en v3 draft'), 'en v3 draft');
+-- A re-render with a newer renderer. now() is fixed for the whole transaction, so
+-- give it a later created_at by hand, as a later transaction would get.
+INSERT INTO cv.cv_renders (version_id, locale, format, renderer_version, content_hash, content, created_at)
+VALUES (pg_temp.id('v1'), 'en', 'pdf', 'pdf/2', sha256('en v1'), 'en v1', now() + interval '1 second');
+
+SELECT pg_temp.expect('public: latest en serves the newest render of v1, with the name',
+    (SELECT version_number = 1 AND content = 'en v1'::bytea AND name = 'R. Alan Williams'
+       FROM cv.cv_public_render('en', 'pdf')));
+SELECT pg_temp.expect('public: latest fr serves v2',
+    (SELECT content FROM cv.cv_public_render('fr', 'pdf')) = 'fr v2'::bytea);
+SELECT pg_temp.expect('public: a version once published for fr is still served by number',
+    (SELECT content FROM cv.cv_public_render('fr', 'pdf', 2)) = 'fr v2'::bytea);
+SELECT pg_temp.expect('public: unpublished nb has no latest file',
+    NOT EXISTS (SELECT 1 FROM cv.cv_public_render('nb', 'pdf')));
+SELECT pg_temp.expect('public: but its permalink still works',
+    (SELECT content FROM cv.cv_public_render('nb', 'pdf', 1)) = 'nb v1'::bytea);
+SELECT pg_temp.expect('public: a draft is never served, even by number',
+    NOT EXISTS (SELECT 1 FROM cv.cv_public_render('en', 'pdf', 3)));
+SELECT pg_temp.expect('public: fr never published v1, so v1 is not served in fr',
+    NOT EXISTS (SELECT 1 FROM cv.cv_public_render('fr', 'pdf', 1)));
+SELECT pg_temp.expect('public: no file in that format means no row',
+    NOT EXISTS (SELECT 1 FROM cv.cv_public_render('en', 'md')));
 
 SELECT pg_temp.expect_error('email uniqueness ignores case', '23505',
     $q$INSERT INTO cv.users (id, email, display_name)
@@ -398,6 +438,25 @@ SELECT pg_temp.expect_error('cv_app cannot change reference data', '42501',
     $q$INSERT INTO cv.locales VALUES ('de', 'Deutsch', false, true)$q$);
 SELECT pg_temp.expect_error('cv_app cannot change a user id', '42501',
     $q$UPDATE cv.users SET id = gen_random_uuid()$q$);
+
+RESET ROLE;
+
+-- cv_public may call cv_public_render and nothing else.
+GRANT cv_public TO CURRENT_USER;
+SET LOCAL ROLE cv_public;
+
+SELECT pg_temp.expect('cv_public can fetch a published file',
+    (SELECT content FROM cv.cv_public_render('en', 'pdf')) = 'en v1'::bytea);
+SELECT pg_temp.expect_error('cv_public cannot read stored files directly', '42501',
+    $q$SELECT 1 FROM cv.cv_renders$q$);
+SELECT pg_temp.expect_error('cv_public cannot read versions', '42501',
+    $q$SELECT 1 FROM cv.cv_versions$q$);
+SELECT pg_temp.expect_error('cv_public cannot read what is published', '42501',
+    $q$SELECT 1 FROM cv.cv_published$q$);
+SELECT pg_temp.expect_error('cv_public cannot call the other functions', '42501',
+    $q$SELECT 1 FROM cv.cv_version_localized(gen_random_uuid())$q$);
+SELECT pg_temp.expect_error('cv_public cannot write', '42501',
+    $q$INSERT INTO cv.audit_log (id, action) VALUES (gen_random_uuid(), 'DOWNLOAD')$q$);
 
 RESET ROLE;
 
