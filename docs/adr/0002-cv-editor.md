@@ -89,7 +89,7 @@ Errors are RFC 7807 problem documents with a stable `code`: `conflict`, `invalid
 - Dates are stored language-neutrally in `attrs` (`YYYY` or `YYYY-MM`) and formatted per locale.
 - French gets a narrow no-break space before `: ; ! ?` and inside `« »`. Only existing spaces are converted, so `10:30` is untouched.
 - The preview marks missing and stale text. A download leaves out lines with no text rather than printing empty ones.
-- `RendererVersion` (`html/2` since the layout above) is ready for `cv_renders.renderer_version`.
+- `RendererVersion` (`html/2` since the layout above) is ready for `cv_renders.renderer_version`. *`html/3` adds a viewport tag and phone padding for the public HTML download ([ADR 0003](0003-public-cv-downloads.md)); PDFs are unchanged.*
 
 PDFs are printed by a **Chromium-based browser already on the machine** (Chrome, Edge or Chromium, or `CV_CHROMIUM_PATH`), driven through PuppeteerSharp. Chromium's print engine supports the CSS this relies on (`@page`, hyphenation), and using the installed browser avoids a 150 MB download. The stylesheet uses local fonts only (Calibri, falling back to Carlito and other system sans-serifs), so PDF generation needs no network and covers æ ø å and French accents.
 
