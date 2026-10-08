@@ -180,10 +180,27 @@ None of these are secrets. They tell the editor which tokens to accept. Set all 
 ```
 
 - **What it does:** registers a *CV editor* task that runs at startup, before anyone logs in. The task runs `scripts/Start-Editor.ps1`, which loads `.env`, starts the editor in Production mode and starts it again whenever it stops.
-- **Logs:** `%LOCALAPPDATA%\cv-editor\editor.log`.
-- **After code changes:** pull the changes, then restart the task (`Stop-ScheduledTask "CV editor"; Start-ScheduledTask "CV editor"`). It rebuilds on start.
+- **Logs:** `%LOCALAPPDATA%\cv-editor\editor.log`. It can be read while the editor runs.
+- **After code changes:** pull the changes, then **Stop** and **Start** from the tray icon (below). The editor rebuilds on start. A change to `scripts/Start-Editor.ps1` itself needs the task restarted instead, in an elevated PowerShell: `Stop-ScheduledTask "CV editor"; Start-ScheduledTask "CV editor"`.
 - **Removing it:** `./scripts/Register-EditorTask.ps1 -Unregister`.
-- **Port clash:** while the task runs, it holds port 5180, so stop it before running `dotnet run --project src/Cv.Editor` by hand. Or just use http://localhost:5180, which the task's editor serves too.
+- **Port clash:** while the editor runs, it holds port 5180, so stop it from the tray icon before running `dotnet run --project src/Cv.Editor` by hand. Or just use http://localhost:5180, which the task's editor serves too.
+
+**Turning it off and on.** A tray icon stops the editor when you don't need it and starts it again. Run this once, in a normal (**not** elevated) PowerShell:
+
+```powershell
+./scripts/Show-EditorTray.ps1 -Register   # shows the icon now and at every sign-in
+```
+
+The icon is the website's CV icon (`public/images/CV.png`), with the paper tinted:
+
+| Icon | Meaning |
+|---|---|
+| Green | Running. Double-click it, or use **Open editor**, to open http://localhost:5180 |
+| Red | Not running. Hover over it to see why: off, starting (building), stopping, or the *CV editor* task isn't running, so nothing can start the editor (see Troubleshooting) |
+
+- **Stop** and **Start** are on its right-click menu, next to **Open log**. Off stays off after a restart, until you choose **Start**. While it's off, editor.ralanwilliams.com shows Cloudflare error 502.
+- **How it works:** you can't start or stop the task without administrator rights, and the editor runs in the background session the task starts. So the icon doesn't touch either. **Stop** creates the file `%LOCALAPPDATA%\cv-editor\off`, and `Start-Editor.ps1`, which checks for it every 2 seconds, stops the editor and waits. **Start** deletes the file. The task itself keeps running all the time.
+- **Exit** closes the icon and leaves the editor as it is. `./scripts/Show-EditorTray.ps1 -Unregister` stops it showing at sign-in.
 
 **6. Keep the computer awake** while plugged in. In **Settings → System → Power**, set *sleep when plugged in* to **Never**, or run `powercfg /change standby-timeout-ac 0`. Windows Update restarts are fine: everything starts again by itself.
 
@@ -240,9 +257,11 @@ CI (`.github/workflows/ci.yml`) runs on every push and pull request. It builds w
 | Port 5180 is in use | Set `Editor__Port` to another port. |
 | "The editor cannot start" with *cv.json has a problem at $.children…* | Fix the seed file at that path and reload. |
 | *Unknown node type 'location'* in the problems list after opening the seed | The `AddLocationNodeType` migration hasn't been applied: `dotnet run --project src/Cv.Migrator`, then restart the editor. |
-| editor.ralanwilliams.com shows Cloudflare error 1033 or 502 | The tunnel can't reach the editor. The computer is off or asleep, `cloudflared` isn't running (**Services → Cloudflared agent**), or the editor isn't running: check `%LOCALAPPDATA%\cv-editor\editor.log` and the *CV editor* task. |
+| editor.ralanwilliams.com shows Cloudflare error 1033 or 502 | The tunnel can't reach the editor. The computer is off or asleep, `cloudflared` isn't running (**Services → Cloudflared agent**), or the editor isn't running: check the tray icon (hover over it: *Off* means it was turned off), `%LOCALAPPDATA%\cv-editor\editor.log` and the *CV editor* task. |
 | `403` *Sign in through Cloudflare Access first* through the tunnel | No valid Access token reached the editor. Check that `CV_ACCESS_TEAM_DOMAIN` and `CV_ACCESS_AUD` match the dashboard; the editor log says why it refused. |
 | `403` *… is not the CV's author* | The Access policy let in an email that isn't the one in `cv.users`. Sign in with the author's email, and tighten the policy. If you just changed the email in `cv.users` or `.env`, restart the task: the editor reads the author once per start. |
 | `403` *Remote access to the editor is not set up* | The tunnel reached an editor without the three remote-access settings. Add them to `.env` and restart the task. |
 | The editor won't start: *Remote access needs all three of …* | Set `CV_EDITOR_PUBLIC_HOST`, `CV_ACCESS_TEAM_DOMAIN` and `CV_ACCESS_AUD`, or remove all three. |
-| Port 5180 in use when running the editor by hand | The *CV editor* task is running it already. Use it, or `Stop-ScheduledTask "CV editor"` first. |
+| Port 5180 in use when running the editor by hand | The *CV editor* task is running it already. Use it, or choose **Stop** on the tray icon first. |
+| The tray icon says the task isn't running | The *CV editor* task isn't running. Start it in an elevated PowerShell (`Start-ScheduledTask "CV editor"`), or register it (*Remote access* step 5). |
+| **Stop** on the tray icon does nothing | The task is still running a `Start-Editor.ps1` from before the tray icon existed. Restart the task once, in an elevated PowerShell: `Stop-ScheduledTask "CV editor"; Start-ScheduledTask "CV editor"`. |

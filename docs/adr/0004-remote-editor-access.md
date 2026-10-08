@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-08
-- **Implementation:** `src/Cv.Editor/Security` (`EditorSecurityMiddleware`, `AccessTokenValidator`), `scripts/Start-Editor.ps1`, `scripts/Register-EditorTask.ps1`, `tests/Cv.Editor.Tests/RemoteAccessTests.cs`
+- **Implementation:** `src/Cv.Editor/Security` (`EditorSecurityMiddleware`, `AccessTokenValidator`), `scripts/Start-Editor.ps1`, `scripts/Register-EditorTask.ps1`, `scripts/Show-EditorTray.ps1`, `tests/Cv.Editor.Tests/RemoteAccessTests.cs`
 
 ## Context
 
@@ -52,6 +52,8 @@ Remote access is off by default. It turns on only when all three of `CV_EDITOR_P
 - `cloudflared` runs as a Windows service.
 - The editor runs from a scheduled task that starts at boot, before anyone logs in (`scripts/Register-EditorTask.ps1`). It runs `scripts/Start-Editor.ps1`, which loads `.env`, runs the editor in Production mode (no developer error pages through the tunnel) and starts it again whenever it exits.
 - The computer must not sleep while plugged in.
+
+The author can still turn the editor off when it isn't needed, from a tray icon (`scripts/Show-EditorTray.ps1`). The task is registered by an administrator, so the author's own account can only read it, and the editor runs in the task's background session. The icon therefore doesn't control either. It creates or deletes a flag file (`%LOCALAPPDATA%\cv-editor\off`), and `Start-Editor.ps1` stops the editor while the file exists and starts it when it's gone. The task keeps running either way, and off stays off after a restart. Granting the account the right to start and stop the task would have worked too, but stopping the task leaves the editor process running in the background session, out of the icon's reach.
 
 A crash or update reboot therefore needs no action. A hung or powered-off computer can't be fixed remotely, and that is accepted (§5).
 

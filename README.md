@@ -78,7 +78,7 @@ Each significant decision is written up as an Architecture Decision Record (ADR)
 ├── docs/cv-database.md  database setup and migration guide
 ├── docs/cv-editor.md    editor setup, use and tests
 ├── docs/cv-public.md    public download setup (Hyperdrive, Pages, rate limit)
-└── scripts/             helper scripts: .env loading, the ADR index, starting the editor at boot
+└── scripts/             helper scripts: .env loading, the ADR index, starting the editor at boot, its tray icon
 ```
 
 ## Getting started
