@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-06
-- **Implementation:** `src/Cv.Core/Rendering` (`MarkdownRenderer`), `src/Cv.Data/Migrations/*_StoreRenderContent.cs` (stored files, `cv_public` role and function), `src/Cv.Data/Migrations/*_RequireRendersToPublish.cs` (the publish rule), `src/Cv.Editor/Publishing` (rendering on publish, the backfill command); planned: `functions/cv` (the public endpoint), a keep-alive Worker
+- **Implementation:** `src/Cv.Core/Rendering` (`MarkdownRenderer`), `src/Cv.Data/Migrations/*_StoreRenderContent.cs` (stored files, `cv_public` role and function), `src/Cv.Data/Migrations/*_RequireRendersToPublish.cs` (the publish rule), `src/Cv.Editor/Publishing` (rendering on publish, the backfill command), `functions/` and `src/Cv.Public` (the public endpoint), `wrangler.toml` (the Hyperdrive binding); planned: a keep-alive Worker
 
 ## Context
 
@@ -41,7 +41,7 @@ A new NOLOGIN role, **`cv_public`**, has no access to any table. It may only EXE
 - With a version number it serves that version only if a `cv_publications` row has **ever** published it for that locale. A draft returns nothing, whether or not someone guesses its number.
 - It returns the newest render's bytes, hash and version number, plus the CV's name line for the download's file name, or no row.
 
-The function is `SECURITY DEFINER` with `search_path = ''`, owned by the schema owner, like the read-side helpers in ADR 0001 §11. The site logs in as **`cv_web`**, a member of `cv_public`, created by hand like `cv_api` (it has a password, so it does not belong in a migration). Its connection string is a Cloudflare secret. If it leaks, the holder can read what is already public.
+The function is `SECURITY DEFINER` with `search_path = ''`, owned by the schema owner, like the read-side helpers in ADR 0001 §11. The site logs in as **`cv_web`**, a member of `cv_public`, created by hand like `cv_api` (it has a password, so it does not belong in a migration). Its connection string is held, encrypted, in a Cloudflare **Hyperdrive** config, which pools connections to Supabase. A download then skips the TLS handshake and login, which matters under the Workers free plan's CPU limit. Hyperdrive's free plan allows 100,000 queries a day and fails queries past that rather than billing for them, which meets the constraints above. If the connection string leaks, the holder can read what is already public.
 
 `cv_public` is a new database role, not Supabase's `anon` role, and the `cv` schema stays out of the Data API (ADR 0001 §11).
 
@@ -69,8 +69,9 @@ Path forms are served the same way (not redirected), so links stay short:
 
 - **`version` is the version number, not the UUID.** ADR 0001 §7 used `/cv/v/{version_id}/` so that a permalink could not be guessed. A number is guessable, but §3 means guessing only finds versions that were already public for that language. A number is also something a person can read and type.
 - **The default language is fixed** (English). As ADR 0001 §7 says, `Accept-Language` is not used, so a link always returns the same file.
-- **Responses:** an invalid value is `400`. A version or locale with nothing to serve is `404`. Methods other than `GET` and `HEAD` are `405`. Unknown parameters such as `utm_source` are ignored, because link-sharing sites add them.
-- **Headers:** the format's `Content-Type`; `Content-Disposition` with `filename*=UTF-8''…` and an ASCII fallback (ADR 0001 follow-up), `inline` for PDF and HTML and `attachment` for Markdown; `ETag` from `content_hash`; `X-Content-Type-Options: nosniff`. HTML also gets a Content-Security-Policy that allows no scripts.
+- **Path forms take everything from the path.** `lang`, `format` or `version` in a path form's query string is a `400`, rather than one silently winning over the other.
+- **Responses:** an invalid value is `400`. A version or locale with nothing to serve is `404`. Methods other than `GET` and `HEAD` are `405`. Unknown parameters such as `utm_source` are ignored, because link-sharing sites add them. If the database can't be reached, the response is `503` with `Retry-After`, and errors are never cached.
+- **Headers:** the format's `Content-Type`; `Content-Disposition` with `filename*=UTF-8''…` and an ASCII fallback (ADR 0001 follow-up), `inline` for PDF and HTML and `attachment` for Markdown; `ETag` from `content_hash`, so `If-None-Match` gets a `304`; `X-Content-Type-Options: nosniff`; `CV-Version` with the version number served. HTML also gets a Content-Security-Policy that allows no scripts.
 
 ### 5. Caching instead of purging
 
@@ -78,6 +79,7 @@ The Function caches responses at Cloudflare's edge:
 
 - **Latest-version URLs:** 5 minutes. A publish shows up within 5 minutes, with no purge call, so the editor needs no Cloudflare API token.
 - **Pinned-version URLs:** 1 day. Not `immutable`, because a renderer bump re-renders old versions.
+- Every URL form of a file shares one cache entry, keyed by its `/cv?lang=…&format=…[&version=…]` form.
 
 Caching keeps repeated downloads away from the database. A rate-limiting rule on `/cv*` (the free plan includes one) limits what is not cached.
 

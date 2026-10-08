@@ -162,6 +162,7 @@ node --test "tests/Cv.Editor.Js/*.test.mjs"         # browser-side model
 | `tests/Cv.Editor.Tests` | Nothing (in-memory store, fake PDF renderer) |
 | `tests/Cv.Data.Tests` | PostgreSQL 15+: Docker running, **or** `CV_TEST_POSTGRES` set to an admin connection string for a **disposable** server, e.g. `Host=localhost;Port=5432;Username=postgres;Password=postgres;Database=postgres` |
 | `tests/db/schema-tests.sql` | psql (see [cv-database.md §7](cv-database.md#7-run-the-schema-tests-optional)) |
+| `tests/Cv.Public.Js` | Node.js: the public `/cv` endpoint. `npm test` runs it with the browser-model tests ([cv-public.md](cv-public.md#tests)) |
 
 The integration tests create and drop databases named `cv_test_*` and the login roles `cv_test_app` and `cv_test_web`, so **never point `CV_TEST_POSTGRES` at Supabase**. Without Docker or `CV_TEST_POSTGRES` they are skipped. CI sets `CV_TEST_REQUIRE_DATABASE=1`, which turns a missing database into a failure instead.
 

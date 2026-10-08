@@ -24,6 +24,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
       - name: Restore tools
         run: dotnet tool restore
@@ -39,5 +40,11 @@ jobs:
         env:
           CV_TEST_REQUIRE_DATABASE: '1'
 
-      - name: Browser-side model tests
-        run: node --test "tests/Cv.Editor.Js/*.test.mjs"
+      - name: Install Node packages
+        run: npm ci
+
+      - name: JavaScript tests (editor model and public /cv endpoint)
+        run: npm test
+
+      - name: Pages Functions bundle
+        run: npm run build:functions
