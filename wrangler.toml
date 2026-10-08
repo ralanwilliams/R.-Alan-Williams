@@ -12,4 +12,4 @@ compatibility_flags = ["nodejs_compat"] # node-postgres needs Node's net, tls an
 # For `npm run dev`, set CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_CV_DB to a local database.
 [[hyperdrive]]
 binding = "CV_DB"
-id = "<hyperdrive-config-id>"
+id = "dcc0eef46bbc46a6bf679b28242c6010"
