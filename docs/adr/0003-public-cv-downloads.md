@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-06
-- **Implementation:** `src/Cv.Core/Rendering` (`MarkdownRenderer`), `src/Cv.Data/Migrations/*_StoreRenderContent.cs` (stored files, `cv_public` role and function), `src/Cv.Data/Migrations/*_RequireRendersToPublish.cs` (the publish rule), `src/Cv.Editor/Publishing` (rendering on publish, the backfill command), `functions/` and `src/Cv.Public` (the public endpoint), `wrangler.toml` (the Hyperdrive binding); planned: a keep-alive Worker
+- **Implementation:** `src/Cv.Core/Rendering` (`MarkdownRenderer`), `src/Cv.Data/Migrations/*_StoreRenderContent.cs` (stored files, `cv_public` role and function), `src/Cv.Data/Migrations/*_RequireRendersToPublish.cs` (the publish rule), `src/Cv.Editor/Publishing` (rendering on publish, the backfill command), `functions/` and `src/Cv.Public` (the public endpoint), `wrangler.toml` (the Hyperdrive binding), `workers/keep-alive` (the keep-alive)
 
 ## Context
 
