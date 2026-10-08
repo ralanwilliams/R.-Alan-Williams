@@ -1,16 +1,20 @@
 using System.Net;
+using System.Security.Cryptography;
 using Cv.Core.Hashing;
 using Cv.Core.Localization;
 using Cv.Core.Model;
 using Cv.Data.Store;
 using Cv.Editor;
 using Cv.Editor.Pdf;
+using Cv.Editor.Security;
 using Cv.Testing;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.JsonWebTokens;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Cv.Editor.Tests;
 
@@ -29,6 +33,12 @@ public sealed class EditorFactory : WebApplicationFactory<Program>
     /// <summary>Sets CV_SEED_FILE for this app instance.</summary>
     public string? SeedFile { get; init; }
 
+    /// <summary>Turns on remote access (ADR 0004) with <see cref="TestAccess"/>'s team, audience and key.</summary>
+    public bool RemoteAccess { get; init; }
+
+    /// <summary>Stands in for Cloudflare Access: its key signs the tokens the tests send.</summary>
+    public TestAccess Access { get; } = new();
+
     /// <summary>A client whose requests carry the editor's own Origin, as the page's do.</summary>
     public HttpClient CreateEditorClient()
     {
@@ -44,10 +54,17 @@ public sealed class EditorFactory : WebApplicationFactory<Program>
         {
             builder.UseSetting(EditorOptions.SeedFileVariable, SeedFile);
         }
+        if (RemoteAccess)
+        {
+            builder.UseSetting(EditorOptions.PublicHostVariable, TestAccess.PublicHost);
+            builder.UseSetting(EditorOptions.AccessTeamDomainVariable, TestAccess.TeamDomain);
+            builder.UseSetting(EditorOptions.AccessAudienceVariable, TestAccess.Audience);
+        }
         builder.ConfigureTestServices(services =>
         {
             services.AddSingleton<ICvStore>(Store);
             services.AddSingleton<IPdfRenderer>(Pdf);
+            services.AddSingleton<IAccessKeySource>(Access);
             services.AddSingleton<IStartupFilter, TestRemoteAddress>();
         });
     }
@@ -293,4 +310,70 @@ public sealed class InMemoryCvStore : ICvStore
 
     public Task<IReadOnlyList<VersionChange>> DiffAsync(Guid fromVersionId, Guid toVersionId, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<VersionChange>>([]);
+}
+
+/// <summary>
+/// Cloudflare Access for tests: a Zero Trust team with signing keys. <see cref="CreateToken"/>
+/// mints the token Access would add as <c>Cf-Access-Jwt-Assertion</c>.
+/// </summary>
+public sealed class TestAccess : IAccessKeySource
+{
+    public const string PublicHost = "editor.example.com";
+    public const string TeamDomain = "team.cloudflareaccess.com";
+    public const string Audience = "0123456789abcdef-test-aud";
+
+    private readonly List<SecurityKey> _published;
+    private List<SecurityKey> _fetched;
+
+    public TestAccess()
+    {
+        Key = NewKey("key-1");
+        _published = [Key];
+        _fetched = [.. _published];
+    }
+
+    /// <summary>The key Access currently signs with.</summary>
+    public RsaSecurityKey Key { get; private set; }
+
+    /// <summary>How often the editor fetched the keys again because a token named an unknown one.</summary>
+    public int Refreshes { get; private set; }
+
+    public static RsaSecurityKey NewKey(string id) => new(RSA.Create(2048)) { KeyId = id };
+
+    /// <summary>Access starts signing with a new key, as it does every 6 weeks. The editor hasn't fetched it yet.</summary>
+    public void Rotate()
+    {
+        Key = NewKey($"key-{_published.Count + 1}");
+        _published.Add(Key);
+    }
+
+    public Task<ICollection<SecurityKey>> GetKeysAsync(bool refresh, CancellationToken cancellationToken)
+    {
+        if (refresh)
+        {
+            Refreshes++;
+            _fetched = [.. _published];
+        }
+        return Task.FromResult<ICollection<SecurityKey>>(_fetched);
+    }
+
+    public string CreateToken(
+        string email = "ada@example.com",
+        string audience = Audience,
+        string issuer = $"https://{TeamDomain}",
+        DateTime? expires = null,
+        SecurityKey? signingKey = null)
+    {
+        var expiry = expires ?? DateTime.UtcNow.AddHours(1);
+        return new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
+        {
+            Issuer = issuer,
+            Audience = audience,
+            IssuedAt = expiry.AddHours(-2),
+            NotBefore = expiry.AddHours(-2),
+            Expires = expiry,
+            Claims = new Dictionary<string, object> { ["email"] = email },
+            SigningCredentials = new SigningCredentials(signingKey ?? Key, SecurityAlgorithms.RsaSha256),
+        });
+    }
 }

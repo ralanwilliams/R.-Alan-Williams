@@ -37,7 +37,7 @@ There is one author, who edits occasionally, so hosting buys little. It would al
 | Injected content | A CSP with no inline script or style (`script-src 'self'; style-src 'self'`), `frame-ancestors 'none'` and `nosniff`. The preview is a sandboxed `srcdoc` iframe that may not run scripts. The renderer encodes all text and only emits `http(s)`, `mailto` and `tel` links. |
 | A compromised editor | It connects as `cv_api` (member of `cv_app`), which can only SELECT and INSERT. History cannot be altered even then. |
 
-Each rule has a test in `tests/Cv.Editor.Tests/SecurityTests.cs`.
+Each rule has a test in `tests/Cv.Editor.Tests/SecurityTests.cs`. *Remote access through a Cloudflare Tunnel adds an Access-token check for tunnel traffic, which also arrives from loopback: [ADR 0004](0004-remote-editor-access.md) §3.*
 
 ### 3. Plain HTML, CSS and JavaScript modules; no front-end build
 
@@ -150,6 +150,6 @@ The author's existing CV had to become version 1. Two choices were made:
 ## Follow-ups
 
 - **Public PDFs:** store rendered PDFs on publish (`cv_renders`) and serve `/cv/{locale}.pdf` from the site. Open choice: either publishing writes files to object storage (e.g. Cloudflare R2), so the site holds no database secret, or the site queries Supabase per request. ADR 0001 §7 and its *Caching* follow-up apply. *Decided in [ADR 0003](0003-public-cv-downloads.md): files are stored in the database on publish and the site queries it.*
-- **Auth**, if the editor is ever hosted: an access proxy or passkeys, as in ADR 0001.
+- **Auth**, if the editor is ever hosted: an access proxy or passkeys, as in ADR 0001. *Decided in [ADR 0004](0004-remote-editor-access.md): the editor stays local and is reached through a Cloudflare Tunnel behind Cloudflare Access.*
 - **Autosave** of unsaved drafts in the browser, so a crash or a conflict reload loses nothing.
 - **Accessibility review** of the editor with a screen reader. Keyboard use, labels, focus states and reduced motion are in place, but have not been audited.
