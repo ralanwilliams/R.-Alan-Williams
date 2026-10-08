@@ -103,12 +103,64 @@ public sealed class CvStoreTests(PostgresServer server)
         d.Add(d.Root, "section", en: "Experience", nb: "Erfaring"); // no French
         var document = Build(d.ToDraft(), null, catalog);
 
-        var result = await store.SaveVersionAsync(new NewVersion(null, document, Author, PublishLocales: ["en", "fr"]));
+        var result = await store.SaveVersionAsync(new NewVersion(null, document, Author, PublishLocales: ["en", "fr"], Files: TestFiles.For("v1", "en", "fr")));
 
         var rejected = Assert.IsType<SaveResult.Rejected>(result);
         Assert.Contains("Cannot publish locale fr", rejected.Message);
-        Assert.Empty(await store.ListVersionsAsync());   // the version was rolled back too
+        Assert.Empty(await store.ListVersionsAsync());   // the version and its files were rolled back too
         Assert.Empty(await store.GetPublishedAsync());
+        Assert.Empty(await store.ListEverPublishedAsync());
+    }
+
+    [Fact]
+    public async Task A_version_cannot_be_published_without_its_files()
+    {
+        var (store, catalog, _) = await NewStoreAsync();
+        var document = Build(TestDraft.Sample().Draft.ToDraft(), null, catalog);
+        var notEnough = TestFiles.For("v1", "en").Where(f => f.Format == "pdf").ToList();
+
+        var saved = await store.SaveVersionAsync(new NewVersion(null, document, Author, PublishLocales: ["en"], Files: notEnough));
+
+        Assert.Equal("Cannot publish locale en: no stored file in format(s) html, md. Store the rendered files in cv.cv_renders first, in the same transaction.",
+            Assert.IsType<SaveResult.Rejected>(saved).Message);
+        Assert.Empty(await store.ListVersionsAsync());
+    }
+
+    [Fact]
+    public async Task Publishing_a_saved_version_stores_its_files_first_and_republishing_needs_none()
+    {
+        var (store, catalog, _) = await NewStoreAsync();
+        var v1 = Saved(await store.SaveVersionAsync(new NewVersion(null, Build(TestDraft.Sample().Draft.ToDraft(), null, catalog), Author)));
+
+        var withoutFiles = await store.PublishAsync(new PublishRequest(v1.Id, ["nb"], Author));
+        var withFiles = await store.PublishAsync(new PublishRequest(v1.Id, ["nb"], Author, Files: TestFiles.For("v1", "nb")));
+        var unpublished = await store.PublishAsync(new PublishRequest(null, ["nb"], Author)); // needs no files
+        var republished = await store.PublishAsync(new PublishRequest(v1.Id, ["nb"], Author));  // has them already
+
+        Assert.Contains("no stored file in format(s) html, md, pdf", Assert.IsType<PublishResult.Rejected>(withoutFiles).Message);
+        Assert.IsType<PublishResult.Published>(withFiles);
+        Assert.IsType<PublishResult.Published>(unpublished);
+        Assert.IsType<PublishResult.Published>(republished);
+        Assert.Equal(
+            TestFiles.For("v1", "nb").Select(f => new StoredFile(f.Locale, f.Format, f.RendererVersion)).OrderBy(f => f.Format),
+            (await store.ListFilesAsync(v1.Id)).OrderBy(f => f.Format));
+    }
+
+    [Fact]
+    public async Task Files_can_be_added_later_and_every_published_version_is_listed()
+    {
+        var (store, catalog, _) = await NewStoreAsync();
+        var (sample, ids) = TestDraft.Sample();
+        var v1Document = Build(sample.ToDraft(), null, catalog);
+        var v1 = Saved(await store.SaveVersionAsync(new NewVersion(null, v1Document, Author, PublishLocales: ["en", "nb"], Files: TestFiles.For("v1", "en", "nb"))));
+        var v2 = Saved(await store.SaveVersionAsync(new NewVersion(v1.Id, EditText(v1Document, catalog, ids.Headline, "en", "Principal engineer"), Author)));
+        Assert.IsType<PublishResult.Published>(await store.PublishAsync(new PublishRequest(null, ["nb"], Author)));
+
+        await store.AddFilesAsync(v1.Id, [new RenderedFile("en", "pdf", "test/2", "re-rendered"u8.ToArray())]);
+
+        Assert.Equal([new PublishedOnce(v1.Id, 1, "en"), new PublishedOnce(v1.Id, 1, "nb")], await store.ListEverPublishedAsync()); // nb was unpublished; v2 is a draft
+        Assert.Equal(7, (await store.ListFilesAsync(v1.Id)).Count);
+        Assert.Empty(await store.ListFilesAsync(v2.Id));
     }
 
     [Fact]
@@ -117,8 +169,8 @@ public sealed class CvStoreTests(PostgresServer server)
         var (store, catalog, _) = await NewStoreAsync();
         var (sample, ids) = TestDraft.Sample();
         var v1Document = Build(sample.ToDraft(), null, catalog);
-        var v1 = Saved(await store.SaveVersionAsync(new NewVersion(null, v1Document, Author, PublishLocales: ["en", "nb"])));
-        var v2 = Saved(await store.SaveVersionAsync(new NewVersion(v1.Id, EditText(v1Document, catalog, ids.Headline, "en", "Principal engineer"), Author, PublishLocales: ["en"])));
+        var v1 = Saved(await store.SaveVersionAsync(new NewVersion(null, v1Document, Author, PublishLocales: ["en", "nb"], Files: TestFiles.For("v1", "en", "nb"))));
+        var v2 = Saved(await store.SaveVersionAsync(new NewVersion(v1.Id, EditText(v1Document, catalog, ids.Headline, "en", "Principal engineer"), Author, PublishLocales: ["en"], Files: TestFiles.For("v2", "en"))));
 
         async Task<Dictionary<string, Guid>> Live() => (await store.GetPublishedAsync()).ToDictionary(p => p.Locale, p => p.VersionId);
 

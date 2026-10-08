@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-06
-- **Implementation:** `src/Cv.Core/Rendering` (`MarkdownRenderer`), `src/Cv.Data/Migrations/*_StoreRenderContent.cs` (stored files, `cv_public` role and function); planned: the publish rule, `src/Cv.Editor` (rendering on publish), `functions/cv` (the public endpoint), a keep-alive Worker
+- **Implementation:** `src/Cv.Core/Rendering` (`MarkdownRenderer`), `src/Cv.Data/Migrations/*_StoreRenderContent.cs` (stored files, `cv_public` role and function), `src/Cv.Data/Migrations/*_RequireRendersToPublish.cs` (the publish rule), `src/Cv.Editor/Publishing` (rendering on publish, the backfill command); planned: `functions/cv` (the public endpoint), a keep-alive Worker
 
 ## Context
 
@@ -27,11 +27,11 @@ The site reads files from the database through a Pages Function. Object storage 
 
 ### 2. Publishing requires files; the database enforces it
 
-The publish trigger (`cv.check_publication`, ADR 0001 §7) gains one rule: a version can be published for a locale only if `cv_renders` holds that version and locale in every format. Unpublishing (`version_id` NULL) is unaffected.
+The publish trigger (`cv.check_publication`, ADR 0001 §7) gains one rule: a version can be published for a locale only if `cv_renders` holds that version and locale in every format. Unpublishing (`version_id` NULL) is unaffected. A file from any renderer version counts.
 
-So the editor renders and inserts the files **before** the publication rows, in the same transaction (the order ADR 0002 §7 already uses for Save & Publish). A publish whose rendering fails publishes nothing. Republishing an older version needs no new files, because it already has them.
+So the editor renders and inserts the files **before** the publication rows, in the same transaction (the order ADR 0002 §7 already uses for Save & Publish). The files are rendered before the transaction starts, so printing PDFs never holds it open. A publish whose rendering fails publishes nothing. Republishing an older version needs no new files, because it already has them. The exception is a version whose files came from an older renderer: the editor renders it again with the current one first.
 
-When the renderer's output changes, `RendererVersion` is bumped and a backfill command renders the published versions again. The new rows sit beside the old ones, because `cv_renders` is append-only. The newest row per version, locale and format is served.
+When the renderer's output changes, `RendererVersion` is bumped and a backfill command (`dotnet run --project src/Cv.Editor -- backfill`) renders the published versions again. The new rows sit beside the old ones, because `cv_renders` is append-only. The newest row per version, locale and format is served. The same command stores files for versions published before this rule existed. The trigger only checks new publication rows, so those versions are still published, but they have nothing to serve until the backfill runs.
 
 ### 3. A public role that can read published files and nothing else
 

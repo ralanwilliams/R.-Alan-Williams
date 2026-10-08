@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Security.Cryptography;
 using Cv.Core.Hashing;
 using Cv.Core.Model;
 using Cv.Data.Entities;
@@ -15,6 +16,7 @@ public sealed class CvStore(IDbContextFactory<CvDbContext> contextFactory) : ICv
 {
     private const string VersionNumberIndex = "ux_cv_versions_version_number";
     private const string PreviousVersionIndex = "ux_cv_versions_previous_version_id";
+    private const string RendersKey = "pk_cv_renders";
 
     // Locales and grammar are seed data; they change only through a migration (and a restart).
     private readonly SemaphoreSlim _catalogLock = new(1, 1);
@@ -160,13 +162,14 @@ public sealed class CvStore(IDbContextFactory<CvDbContext> contextFactory) : ICv
         db.Versions.Add(version);
         db.Nodes.AddRange(DocumentMapper.ToNodes(version.Id, request.Document));
         db.NodeContents.AddRange(DocumentMapper.ToContents(version.Id, request.Document));
+        db.Renders.AddRange(ToRenders(version.Id, request.Files));
 
         try
         {
             await db.SaveChangesAsync(cancellationToken);
 
-            // Publications go in a second batch, after the version's rows exist: the publish
-            // trigger counts missing text, and EF would otherwise be free to insert the
+            // Publications go in a second batch, after the version's rows and files exist: the
+            // publish trigger checks both, and EF would otherwise be free to insert the
             // publication first (it depends only on cv_versions), when the tree is still empty.
             var publishLocales = request.PublishLocales ?? [];
             if (publishLocales.Count > 0)
@@ -202,26 +205,69 @@ public sealed class CvStore(IDbContextFactory<CvDbContext> contextFactory) : ICv
 
         await using var db = await contextFactory.CreateDbContextAsync(cancellationToken);
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        db.Publications.AddRange(request.Locales.Select(locale => new CvPublication
-        {
-            LocaleCode = locale,
-            VersionId = request.VersionId,
-            PublishedBy = request.PublishedBy,
-            Note = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim(),
-        }));
 
         try
         {
+            // Files first, in their own batch: the publish trigger looks for them (ADR 0003 §2).
+            if (request.VersionId is { } versionId && request.Files is { Count: > 0 } files)
+            {
+                db.Renders.AddRange(ToRenders(versionId, files));
+                await db.SaveChangesAsync(cancellationToken);
+            }
+
+            db.Publications.AddRange(request.Locales.Select(locale => new CvPublication
+            {
+                LocaleCode = locale,
+                VersionId = request.VersionId,
+                PublishedBy = request.PublishedBy,
+                Note = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim(),
+            }));
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return new PublishResult.Published();
         }
         catch (Exception exception) when (FindPostgresException(exception) is { } postgres)
         {
-            return new PublishResult.Rejected(postgres is { SqlState: PostgresErrorCodes.ForeignKeyViolation, ConstraintName: "fk_cv_publications_locale" }
-                ? $"Only these languages can be published: {string.Join(", ", (await GetCatalogAsync(cancellationToken)).PublishableLocales.Select(l => l.Code))}."
-                : Describe(postgres));
+            return new PublishResult.Rejected(postgres switch
+            {
+                { SqlState: PostgresErrorCodes.ForeignKeyViolation, ConstraintName: "fk_cv_publications_locale" } =>
+                    $"Only these languages can be published: {string.Join(", ", (await GetCatalogAsync(cancellationToken)).PublishableLocales.Select(l => l.Code))}.",
+                { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: RendersKey } =>
+                    "Another publish stored the same files at the same time. Try again.",
+                _ => Describe(postgres),
+            });
         }
+    }
+
+    public async Task<IReadOnlyList<StoredFile>> ListFilesAsync(Guid versionId, CancellationToken cancellationToken = default)
+    {
+        await using var db = await contextFactory.CreateDbContextAsync(cancellationToken);
+        var files = await db.Renders.AsNoTracking()
+            .Where(r => r.VersionId == versionId)
+            .Select(r => new { r.LocaleCode, r.Format, r.RendererVersion }) // not the content
+            .ToListAsync(cancellationToken);
+        return files.Select(f => new StoredFile(f.LocaleCode, f.Format, f.RendererVersion)).ToList();
+    }
+
+    public async Task<IReadOnlyList<PublishedOnce>> ListEverPublishedAsync(CancellationToken cancellationToken = default)
+    {
+        await using var db = await contextFactory.CreateDbContextAsync(cancellationToken);
+        var rows = await db.Publications.AsNoTracking()
+            .Where(p => p.VersionId != null)
+            .Join(db.Versions, p => p.VersionId, v => (Guid?)v.Id, (p, v) => new { v.Id, v.VersionNumber, p.LocaleCode })
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        return rows
+            .OrderBy(r => r.VersionNumber).ThenBy(r => r.LocaleCode, StringComparer.Ordinal)
+            .Select(r => new PublishedOnce(r.Id, r.VersionNumber, r.LocaleCode))
+            .ToList();
+    }
+
+    public async Task AddFilesAsync(Guid versionId, IReadOnlyList<RenderedFile> files, CancellationToken cancellationToken = default)
+    {
+        await using var db = await contextFactory.CreateDbContextAsync(cancellationToken);
+        db.Renders.AddRange(ToRenders(versionId, files));
+        await db.SaveChangesAsync(cancellationToken); // one batch, one transaction
     }
 
     public async Task<IReadOnlyList<VersionChange>> DiffAsync(Guid fromVersionId, Guid toVersionId, CancellationToken cancellationToken = default)
@@ -236,6 +282,17 @@ public sealed class CvStore(IDbContextFactory<CvDbContext> contextFactory) : ICv
             .ToListAsync(cancellationToken);
         return rows.Select(r => new VersionChange(r.NodeId, r.Locale, r.Change, r.OldValue, r.NewValue)).ToList();
     }
+
+    private static IEnumerable<CvRender> ToRenders(Guid versionId, IReadOnlyList<RenderedFile>? files) =>
+        (files ?? []).Select(f => new CvRender
+        {
+            VersionId = versionId,
+            LocaleCode = f.Locale,
+            Format = f.Format,
+            RendererVersion = f.RendererVersion,
+            ContentHash = SHA256.HashData(f.Content), // the database checks it (ck_cv_renders_content_hash_matches)
+            Content = f.Content,
+        });
 
     private static VersionInfo ToInfo(CvVersion v) => new(
         v.Id, v.VersionNumber, v.PreviousVersionId, v.RestoredFromVersionId, v.Summary,

@@ -9,12 +9,13 @@ Cv.slnx
 │       ├── 20261006120000_InitialCreate.cs
 │       ├── 20261006134243_AddLocationNodeType.cs    adds the `location` line type (ADR 0002 §11)
 │       ├── 20261006165920_StoreRenderContent.cs     stored files, `cv_public` role and function (ADR 0003)
+│       ├── 20261008070628_RequireRendersToPublish.cs  publishing requires stored files (ADR 0003 §2)
 │       ├── CvDbContextModelSnapshot.cs
 │       └── Sql/                  reviewed SQL run by the migration (up + down)
 ├── src/Cv.Migrator/              console app: applies migrations; startup project for dotnet-ef
 ├── scripts/Import-DotEnv.ps1     loads .env into the current PowerShell session
 ├── .env.example                  template for the git-ignored .env (secrets)
-└── tests/db/schema-tests.sql     70 checks that try to break every rule (rolls back)
+└── tests/db/schema-tests.sql     73 checks that try to break every rule (rolls back)
 ```
 
 ## 1. Tooling
@@ -94,7 +95,11 @@ GitHub-hosted runners have no IPv6, which is another reason to use the session p
 
 ## 4. Apply the migration
 
+First load `.env` into the PowerShell window you'll run the migration from (§3). Without `CV_DB_CONNECTION`, the EF tool falls back to a placeholder and fails with *An error occurred using the connection to database 'cv_design_time_placeholder'*. Nothing is changed when that happens.
+
 ```powershell
+. ./scripts/Import-DotEnv.ps1      # note the leading dot + space
+$env:CV_DB_CONNECTION              # should print the postgres.<project-ref> connection string
 dotnet ef database update --project src/Cv.Data --startup-project src/Cv.Migrator
 ```
 
@@ -149,6 +154,8 @@ CREATE ROLE cv_web LOGIN PASSWORD '<another long random password>' IN ROLE cv_pu
 
 Its username through the pooler is `cv_web.<project-ref>`. Its connection string becomes a Cloudflare secret for the public site; it never goes in `.env`.
 
+**Store the files of versions that are already published** (after the `RequireRendersToPublish` migration). From then on, publishing stores a version's files first. Versions published earlier have none, so the public site would have nothing to serve for them. The editor's backfill command renders and stores them: see [cv-editor.md](cv-editor.md#backfilling-public-files).
+
 ## 7. Run the schema tests (optional)
 
 The script builds a three-language CV and tries to break every invariant. It runs in a single transaction and **rolls back**, so it leaves nothing behind. Run it as the schema owner (`postgres`), preferably against a local PostgreSQL 15+ or a throwaway Supabase project rather than the live one: while it runs it holds locks on the `cv` tables.
@@ -157,7 +164,7 @@ The script builds a three-language CV and tries to break every invariant. It run
 psql "host=<host> port=5432 dbname=postgres user=<owner> sslmode=require" -f tests/db/schema-tests.sql
 ```
 
-You should see `All schema tests passed. Rolling back.` after 70 `ok` lines on Supabase, or 68 on plain PostgreSQL, where the two checks on Supabase's `anon` and `authenticated` roles are skipped. The script works with psql on Windows, macOS and Linux.
+You should see `All schema tests passed. Rolling back.` after 73 `ok` lines on Supabase, or 71 on plain PostgreSQL, where the two checks on Supabase's `anon` and `authenticated` roles are skipped. The script works with psql on Windows, macOS and Linux.
 
 The .NET integration tests (`tests/Cv.Data.Tests`) apply the migration to a fresh database for every test and exercise the store against it. See [cv-editor.md](cv-editor.md#run-the-tests).
 
