@@ -48,3 +48,6 @@ jobs:
 
       - name: Pages Functions bundle
         run: npm run build:functions
+
+      - name: Keep-alive Worker bundle
+        run: npm run build:keep-alive

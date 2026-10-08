@@ -1,0 +1,25 @@
+# The keep-alive Worker (ADR 0003 §6). A separate Worker, because Pages Functions can't run on a
+# schedule. Pages doesn't build it: deploy it by hand with `npm run deploy:keep-alive`, once and
+# again whenever this folder or src/Cv.Public/database.js changes. See docs/cv-public.md.
+
+name = "cv-keep-alive"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"] # node-postgres needs Node's net, tls and crypto APIs
+
+# No public URL: the schedule is the only trigger.
+workers_dev = false
+preview_urls = false
+
+# Daily at 04:17 UTC. Supabase pauses after 7 quiet days, so six runs can fail before it matters.
+[triggers]
+crons = ["17 4 * * *"]
+
+# The same Hyperdrive config (and cv_web login) as the /cv Function in ../../wrangler.toml.
+[[hyperdrive]]
+binding = "CV_DB"
+id = "dcc0eef46bbc46a6bf679b28242c6010"
+
+# Keeps each run's log lines, so a failing keep-alive can be spotted in the dashboard.
+[observability]
+enabled = true

@@ -8,7 +8,7 @@ A CV usually lives as a pile of copies: the PDF sent last spring, the Word file 
 
 ## Status
 
-Work in progress. The data layer, the editor and the public download endpoint are built; a keep-alive for the free Supabase plan comes next.
+The data layer, the editor and the public download links are built and live.
 
 | Part | State |
 |---|---|
@@ -17,7 +17,7 @@ Work in progress. The data layer, the editor and the public download endpoint ar
 | Migrations to Supabase | Done |
 | Editor (edit, save, publish, history, restore) | Done: a local web app ([guide](docs/cv-editor.md)) |
 | Renderer (HTML, PDF and Markdown per language) | Done: the editor's preview and downloads, and the files stored on publish |
-| Public download links | Done: a Cloudflare Pages Function over Hyperdrive ([guide](docs/cv-public.md), [ADR 0003](docs/adr/0003-public-cv-downloads.md)); keep-alive next |
+| Public download links | Done: a Cloudflare Pages Function over Hyperdrive ([guide](docs/cv-public.md), [ADR 0003](docs/adr/0003-public-cv-downloads.md)), with a daily keep-alive Worker |
 
 ## How it works
 
@@ -46,7 +46,7 @@ flowchart LR
 - Reviewed SQL for constraints, triggers and views, covered by a SQL test suite
 - Plain HTML, CSS and JavaScript modules for the editor page (no front-end build)
 - PDFs printed by headless Chrome or Edge through PuppeteerSharp
-- Cloudflare Pages Functions (JavaScript, node-postgres) over Hyperdrive for the public downloads
+- Cloudflare Pages Functions and a Cron Trigger Worker (JavaScript, node-postgres) over Hyperdrive for the public downloads
 - Tests: xUnit v3, Testcontainers (PostgreSQL 17), `WebApplicationFactory` and `node:test`, run by GitHub Actions
 
 ## Design decisions
@@ -66,7 +66,8 @@ Each significant decision is written up as an Architecture Decision Record (ADR)
 ```
 ├── public/              the website (ralanwilliams.com)
 ├── functions/           Cloudflare Pages routes for /cv downloads
-├── src/Cv.Public/       the /cv endpoint: URLs, headers, caching, database query
+├── src/Cv.Public/       the /cv endpoint and the keep-alive: URLs, headers, caching, database query
+├── workers/keep-alive/  Cloudflare Worker that queries the database daily so Supabase never pauses
 ├── src/Cv.Core/         document workflow: drafts, ordering, hashing, validation, localisation, rendering
 ├── src/Cv.Data/         EF Core model, migrations, and the store
 ├── src/Cv.Editor/       the editor: HTTP API, security, PDF output, and the page

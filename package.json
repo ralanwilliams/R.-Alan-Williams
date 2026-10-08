@@ -9,6 +9,9 @@
   "scripts": {
     "dev": "wrangler pages dev",
     "build:functions": "wrangler pages functions build --outdir .wrangler/functions-check --compatibility-date 2026-10-01 --compatibility-flags nodejs_compat",
+    "build:keep-alive": "wrangler deploy --dry-run --config workers/keep-alive/wrangler.toml --outdir .wrangler/keep-alive-check",
+    "dev:keep-alive": "wrangler dev --test-scheduled --config workers/keep-alive/wrangler.toml",
+    "deploy:keep-alive": "wrangler deploy --config workers/keep-alive/wrangler.toml",
     "test": "node --test \"tests/Cv.Editor.Js/*.test.mjs\" \"tests/Cv.Public.Js/*.test.mjs\""
   },
   "dependencies": {
