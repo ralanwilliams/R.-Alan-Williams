@@ -103,11 +103,11 @@
             --bit-y: calc(var(--jh-h) * 0.903);
             --s: 1;
             --fs: 1;  /* extra scale for finished holes, set by script so they fit */
-            --slot: calc(150px * var(--s) * var(--fs));
-            --cur-slot: calc(110px * var(--s));
+            --slot: calc(112px * var(--s) * var(--fs));
+            --cur-slot: calc(82px * var(--s));
             position: relative;
             margin: 70px 0 60px 0;
-            padding-bottom: calc(80px * var(--s));
+            padding-bottom: calc(60px * var(--s));
         }
 
         .dig-site > img {
@@ -372,12 +372,13 @@
         const projects = [
             { name: 'BrewBuzz', shipped: '2021-07', url: 'https://www.brewbuzz.beer/', icon: 'images/BrewBuzz.png' },
             { name: 'Squigglepig', shipped: '2026-10', url: 'https://squigglepig.app/', icon: 'images/Squigglepig.png', iconCenter: 0.3 },
-            { name: 'Core Sample', url: 'https://github.com/ralanwilliams/R.-Alan-Williams#readme', logoBg: '#2b4a6f', percentComplete: 74 },
+            { name: 'CV Editor', shipped: '2026-11', url: 'https://github.com/ralanwilliams/R.-Alan-Williams#readme', icon: 'images/CV.png' },
+            { name: 'Pappaperm', url: '#', logoBg: '#2b4a6f', percentComplete: 1 },
         ];
 
         const NS = 'http://www.w3.org/2000/svg';
         const K = 0.48;                           // perspective squash shared by every hole
-        const FINISHED_R = 58, CURRENT_R = 42;    // rim radius on the ground plane
+        const FINISHED_R = 44, CURRENT_R = 32;    // rim radius on the ground plane
         // Every hole is centred where the bit lands: near the back of the current hole
         const CENTER_SHIFT = CURRENT_R * K * 0.35;
 
@@ -446,7 +447,7 @@
             const rng = seededRandom(project.name);
             const R = current ? CURRENT_R : FINISHED_R;
             const k = K;
-            const reach = current ? 85 : 110;     // crack length
+            const reach = current ? 64 : 82;      // crack length
             const halfW = R + reach + 10, halfH = Math.ceil(halfW * k);
 
             const viewBox = `${-halfW} ${-halfH} ${halfW * 2} ${halfH * 2}`;
@@ -477,13 +478,13 @@
                     const a = (i + rng() * 0.6) / count * Math.PI * 2;
                     const length = (stage === 1 ? R * 0.9 : R + reach) * (0.5 + rng() * 0.5);
                     crack(rng, Math.cos(a) * R * 0.06, impactY + Math.sin(a) * R * 0.06, a, length,
-                        stage === 1 ? 2 : 4.5, stage === 1 ? 1 : 0, cracks);
+                        stage === 1 ? 1.5 : 3.4, stage === 1 ? 1 : 0, cracks);
                 }
             } else {
                 rim.forEach(p => {
                     if (rng() < 0.2) return;
                     const a = Math.atan2(p[1], p[0]) + (rng() - 0.5) * 0.4;
-                    crack(rng, p[0], p[1], a, (reach + R - Ro) * (0.45 + rng() * 0.55), current ? 4 : 5, 0, cracks);
+                    crack(rng, p[0], p[1], a, (reach + R - Ro) * (0.45 + rng() * 0.55), current ? 3 : 3.8, 0, cracks);
                 });
             }
             const crackGroup = el('g', { transform: plane }, cracksSvg);
@@ -620,8 +621,8 @@
         const site = document.querySelector('.dig-site');
         function fitHoles() {
             const scale = parseFloat(getComputedStyle(site).getPropertyValue('--s')) || 1;
-            const slot = 150 * scale;
-            const room = Math.max(0, list.clientWidth - 110 * scale);
+            const slot = 112 * scale;
+            const room = Math.max(0, list.clientWidth - 82 * scale);
             const finished = list.querySelectorAll('.hole:not(.current)');
             const shown = Math.min(finished.length, Math.floor(room / (slot * MIN_FIT)));
             finished.forEach((li, i) => { li.hidden = i < finished.length - shown; });
