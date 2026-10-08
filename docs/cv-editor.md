@@ -242,7 +242,7 @@ CI (`.github/workflows/ci.yml`) runs on every push and pull request. It builds w
 | *Unknown node type 'location'* in the problems list after opening the seed | The `AddLocationNodeType` migration hasn't been applied: `dotnet run --project src/Cv.Migrator`, then restart the editor. |
 | editor.ralanwilliams.com shows Cloudflare error 1033 or 502 | The tunnel can't reach the editor. The computer is off or asleep, `cloudflared` isn't running (**Services → Cloudflared agent**), or the editor isn't running: check `%LOCALAPPDATA%\cv-editor\editor.log` and the *CV editor* task. |
 | `403` *Sign in through Cloudflare Access first* through the tunnel | No valid Access token reached the editor. Check that `CV_ACCESS_TEAM_DOMAIN` and `CV_ACCESS_AUD` match the dashboard; the editor log says why it refused. |
-| `403` *… is not the CV's author* | The Access policy let in an email that isn't the one in `cv.users`. Sign in with the author's email, and tighten the policy. |
+| `403` *… is not the CV's author* | The Access policy let in an email that isn't the one in `cv.users`. Sign in with the author's email, and tighten the policy. If you just changed the email in `cv.users` or `.env`, restart the task: the editor reads the author once per start. |
 | `403` *Remote access to the editor is not set up* | The tunnel reached an editor without the three remote-access settings. Add them to `.env` and restart the task. |
 | The editor won't start: *Remote access needs all three of …* | Set `CV_EDITOR_PUBLIC_HOST`, `CV_ACCESS_TEAM_DOMAIN` and `CV_ACCESS_AUD`, or remove all three. |
 | Port 5180 in use when running the editor by hand | The *CV editor* task is running it already. Use it, or `Stop-ScheduledTask "CV editor"` first. |
