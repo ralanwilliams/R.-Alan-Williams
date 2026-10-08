@@ -1,0 +1,15 @@
+# Cloudflare Pages project settings. Pages reads this file on every build (Git integration),
+# and it overrides the dashboard for the settings it contains. See docs/cv-public.md.
+
+name = "ralanwilliams"
+pages_build_output_dir = "./public"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"] # node-postgres needs Node's net, tls and crypto APIs
+
+# The database behind /cv downloads (ADR 0003 §3). The Hyperdrive config holds the cv_web
+# connection string, encrypted; its id is not a secret. Create it with:
+#   npx wrangler hyperdrive create cv-web --caching-disabled --connection-string="postgres://cv_web.<project-ref>:<password>@<pooler-host>:5432/postgres"
+# For `npm run dev`, set CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_CV_DB to a local database.
+[[hyperdrive]]
+binding = "CV_DB"
+id = "<hyperdrive-config-id>"

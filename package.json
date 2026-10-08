@@ -1,0 +1,24 @@
+{
+  "name": "ralanwilliams-site",
+  "private": true,
+  "description": "The public site on Cloudflare Pages: static files in public/, CV downloads in functions/ (ADR 0003).",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "wrangler pages dev",
+    "build:functions": "wrangler pages functions build --outdir .wrangler/functions-check --compatibility-date 2026-10-01 --compatibility-flags nodejs_compat",
+    "test": "node --test \"tests/Cv.Editor.Js/*.test.mjs\" \"tests/Cv.Public.Js/*.test.mjs\""
+  },
+  "dependencies": {
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "wrangler": "4.148.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "workerd@1.20261006.1": true
+  }
+}

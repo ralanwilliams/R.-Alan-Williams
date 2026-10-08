@@ -152,7 +152,7 @@ Through the session pooler, its username is then `cv_api.<project-ref>`. Put its
 CREATE ROLE cv_web LOGIN PASSWORD '<another long random password>' IN ROLE cv_public;
 ```
 
-Its username through the pooler is `cv_web.<project-ref>`. Its connection string becomes a Cloudflare secret for the public site; it never goes in `.env`.
+Its username through the pooler is `cv_web.<project-ref>`. Its connection string goes into the public site's Cloudflare Hyperdrive config ([cv-public.md](cv-public.md#2-create-the-hyperdrive-config)); it never goes in `.env`.
 
 **Store the files of versions that are already published** (after the `RequireRendersToPublish` migration). From then on, publishing stores a version's files first. Versions published earlier have none, so the public site would have nothing to serve for them. The editor's backfill command renders and stores them: see [cv-editor.md](cv-editor.md#backfilling-public-files).
 
