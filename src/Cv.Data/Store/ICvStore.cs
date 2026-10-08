@@ -30,12 +30,28 @@ public interface ICvStore
 
     /// <summary>
     /// Appends a version as the successor of <see cref="NewVersion.BaseVersionId"/> and, in the
-    /// same transaction, publishes it for <see cref="NewVersion.PublishLocales"/>. All or nothing.
+    /// same transaction, stores <see cref="NewVersion.Files"/> and publishes it for
+    /// <see cref="NewVersion.PublishLocales"/>. All or nothing.
     /// </summary>
     Task<SaveResult> SaveVersionAsync(NewVersion version, CancellationToken cancellationToken = default);
 
-    /// <summary>Points each locale at a version, or at nothing when <see cref="PublishRequest.VersionId"/> is null. All or nothing.</summary>
+    /// <summary>
+    /// Stores <see cref="PublishRequest.Files"/>, then points each locale at the version, or at
+    /// nothing when <see cref="PublishRequest.VersionId"/> is null. All or nothing.
+    /// </summary>
     Task<PublishResult> PublishAsync(PublishRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>The files stored for a version (<c>cv.cv_renders</c>), without their content.</summary>
+    Task<IReadOnlyList<StoredFile>> ListFilesAsync(Guid versionId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Every version and locale that has ever been published, oldest version first. Includes
+    /// locales that were unpublished later, because their permalinks still serve them (ADR 0003 §3).
+    /// </summary>
+    Task<IReadOnlyList<PublishedOnce>> ListEverPublishedAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Stores files for an existing version in one transaction, without publishing anything.</summary>
+    Task AddFilesAsync(Guid versionId, IReadOnlyList<RenderedFile> files, CancellationToken cancellationToken = default);
 
     /// <summary>What changed from one version to another (<c>cv.cv_version_diff</c>).</summary>
     Task<IReadOnlyList<VersionChange>> DiffAsync(Guid fromVersionId, Guid toVersionId, CancellationToken cancellationToken = default);
@@ -54,13 +70,27 @@ public sealed record VersionInfo(
 
 public sealed record PublishedLocale(string Locale, Guid VersionId, DateTimeOffset PublishedAt);
 
+/// <param name="Files">Files to store with the version. Publishing needs every format for each locale (ADR 0003 §2).</param>
 public sealed record NewVersion(
     Guid? BaseVersionId,
     CvDocument Document,
     Guid CreatedBy,
     string? Summary = null,
     Guid? RestoredFromVersionId = null,
-    IReadOnlyList<string>? PublishLocales = null);
+    IReadOnlyList<string>? PublishLocales = null,
+    IReadOnlyList<RenderedFile>? Files = null);
+
+/// <summary>
+/// A rendered file to store in <c>cv.cv_renders</c>. <see cref="Format"/> is one of the codes on
+/// <see cref="Entities.CvRender"/>. The store computes the SHA-256.
+/// </summary>
+public sealed record RenderedFile(string Locale, string Format, string RendererVersion, byte[] Content);
+
+/// <summary>A stored file's key, without its content.</summary>
+public sealed record StoredFile(string Locale, string Format, string RendererVersion);
+
+/// <summary>A version that was published for a locale at some point.</summary>
+public sealed record PublishedOnce(Guid VersionId, int VersionNumber, string Locale);
 
 public abstract record SaveResult
 {
@@ -81,7 +111,13 @@ public abstract record SaveResult
     public sealed record Rejected(string Message) : SaveResult;
 }
 
-public sealed record PublishRequest(Guid? VersionId, IReadOnlyList<string> Locales, Guid PublishedBy, string? Note = null);
+/// <param name="Files">Files the version doesn't have yet, stored before publishing (ADR 0003 §2). Unpublishing needs none.</param>
+public sealed record PublishRequest(
+    Guid? VersionId,
+    IReadOnlyList<string> Locales,
+    Guid PublishedBy,
+    string? Note = null,
+    IReadOnlyList<RenderedFile>? Files = null);
 
 public abstract record PublishResult
 {

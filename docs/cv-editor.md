@@ -5,7 +5,7 @@ The editor is a small web app that runs on your own computer. The CV is on the l
 ```
 src/Cv.Core/      document workflow: drafts, ordering, hashing, validation, localisation, HTML rendering
 src/Cv.Data/      EF Core model, migrations, and the store the editor uses (Store/)
-src/Cv.Editor/    the web app: HTTP API, security middleware, PDF output, and the page (wwwroot/)
+src/Cv.Editor/    the web app: HTTP API, security middleware, PDF output, public files and backfill (Publishing/), and the page (wwwroot/)
 tests/            Cv.Core.Tests, Cv.Data.Tests (PostgreSQL), Cv.Editor.Tests (HTTP), Cv.Editor.Js (browser model)
 ```
 
@@ -14,7 +14,7 @@ tests/            Cv.Core.Tests, Cv.Data.Tests (PostgreSQL), Cv.Editor.Tests (HT
 | Tool | Why | Notes |
 |---|---|---|
 | **.NET 10 SDK** (10.0.100 or later) | Builds and runs everything | See [cv-database.md §1](cv-database.md#1-tooling) |
-| **Chrome, Edge or Chromium** | Prints PDFs (Download PDF) | Found automatically in the usual install locations, or set `CV_CHROMIUM_PATH` |
+| **Chrome, Edge or Chromium** | Prints PDFs (Download PDF, publishing) | Found automatically in the usual install locations, or set `CV_CHROMIUM_PATH` |
 | Node.js 22+ *(optional)* | Runs the browser-side unit tests | Not needed to use the editor |
 | Docker *(optional)* | Starts PostgreSQL for the integration tests | Or point `CV_TEST_POSTGRES` at a disposable server |
 
@@ -103,7 +103,11 @@ The seed needs the `location` line type, so apply the `AddLocationNodeType` migr
 - **⋯ → Leave out of {language}** hides a line and everything under it in that language. Left-out lines don't count as missing.
 - **Out of date** means the English changed after the line was translated. Edit the translation, or use **⋯ → Mark translation as up to date** if it is still right.
 
-**Saving.** **Save** stores a new version; nothing public changes. **Save & publish…** saves and makes the chosen languages live in one step. A language with missing text can't be published, and out-of-date translations ask for confirmation. **Discard** returns to the last saved version. **Download PDF** prints the current language as you see it, including unsaved changes, and leaves out lines without text.
+**Saving.** **Save** stores a new version; nothing public changes. **Save & publish…** saves and makes the chosen languages live in one step. A language with missing text can't be published, and out-of-date translations ask for confirmation. **Discard** returns to the last saved version.
+
+**What publishing stores.** Publishing renders the version in each chosen language as a PDF, a standalone HTML page and Markdown, and stores the files with the publication, in one transaction ([ADR 0003](adr/0003-public-cv-downloads.md) §2). These are the files the public download links serve. Publishing therefore needs the browser that prints PDFs and takes a second or two per language. If rendering fails, nothing is saved or published. Republishing a version that already has its files renders nothing.
+
+**Download PDF** prints the current language as you see it, including unsaved changes, and leaves out lines without text.
 
 **History.** **History** lists every version and shows what each language serves now. From there you can:
 
@@ -115,6 +119,23 @@ The seed needs the `location` line type, so apply the `AddLocationNodeType` migr
 **Two tabs.** If you save in one tab while another has the same CV open, the other tab's next save is refused with "Saved somewhere else" and offers to reload. Nothing is overwritten silently (ADR 0001 §3).
 
 **Keyboard.** <kbd>Enter</kbd> adds another bullet, skill or contact. <kbd>Backspace</kbd> on an empty one removes it. <kbd>↑</kbd>/<kbd>↓</kbd> move between lines, <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> move the line itself, and <kbd>Ctrl</kbd>+<kbd>S</kbd> saves. Clicking a line in the preview jumps to its input.
+
+## Backfilling public files
+
+Every version that has ever been published needs its files, because the public links serve the current version and permalinks to older ones ([ADR 0003](adr/0003-public-cv-downloads.md) §3). Publishing stores them, but two cases need the backfill command:
+
+- **Once, after the `RequireRendersToPublish` migration.** Versions published before it have no files.
+- **After a renderer change.** When `HtmlRenderer.RendererVersion` or `MarkdownRenderer.RendererVersion` is bumped, published versions still serve files from the old renderer until they are rendered again.
+
+The command uses the editor's settings (`CV_API_CONNECTION` and the browser), so load `.env` first. The editor doesn't need to be running.
+
+```powershell
+. ./scripts/Import-DotEnv.ps1
+dotnet run --project src/Cv.Editor -- backfill --dry-run   # list what is missing, store nothing
+dotnet run --project src/Cv.Editor -- backfill             # render and store it
+```
+
+It renders every format that has no file from the current renderer, for each version and language that has ever been published, including languages that were unpublished later. Drafts are skipped. Old files are kept, since stored files are never changed or deleted, and the public site serves the newest. Each version is stored in its own transaction, so if the command stops part-way, run it again to continue. A run with nothing to do prints *none*.
 
 ## Security model
 
@@ -142,7 +163,7 @@ node --test "tests/Cv.Editor.Js/*.test.mjs"         # browser-side model
 | `tests/Cv.Data.Tests` | PostgreSQL 15+: Docker running, **or** `CV_TEST_POSTGRES` set to an admin connection string for a **disposable** server, e.g. `Host=localhost;Port=5432;Username=postgres;Password=postgres;Database=postgres` |
 | `tests/db/schema-tests.sql` | psql (see [cv-database.md §7](cv-database.md#7-run-the-schema-tests-optional)) |
 
-The integration tests create and drop databases named `cv_test_*` and a login role `cv_test_app`, so **never point `CV_TEST_POSTGRES` at Supabase**. Without Docker or `CV_TEST_POSTGRES` they are skipped. CI sets `CV_TEST_REQUIRE_DATABASE=1`, which turns a missing database into a failure instead.
+The integration tests create and drop databases named `cv_test_*` and the login roles `cv_test_app` and `cv_test_web`, so **never point `CV_TEST_POSTGRES` at Supabase**. Without Docker or `CV_TEST_POSTGRES` they are skipped. CI sets `CV_TEST_REQUIRE_DATABASE=1`, which turns a missing database into a failure instead.
 
 CI (`.github/workflows/ci.yml`) runs on every push and pull request. It builds with warnings as errors, checks the EF model snapshot, runs every suite, and checks the README's ADR index.
 
@@ -154,7 +175,9 @@ CI (`.github/workflows/ci.yml`) runs on every push and pull request. It builds w
 | "The editor cannot start" with *cv.users does not have exactly one row* | Create your user (cv-database.md §6), or set `CV_EDITOR_USER_EMAIL` if there are several. |
 | "Cannot reach the database" | Wrong host, user or password in `CV_API_CONNECTION`, or no network. The user must be `cv_api.<project-ref>` through the pooler. |
 | `permission denied for schema cv` | The login isn't in `cv_app`: `GRANT cv_app TO cv_api;` as `postgres`. |
-| "Cannot create PDFs" | No Chrome, Edge or Chromium was found. Install one or set `CV_CHROMIUM_PATH`. |
+| "Cannot create PDFs" | No Chrome, Edge or Chromium was found. Install one or set `CV_CHROMIUM_PATH`. Publishing needs it too, so nothing was published. |
+| *Cannot publish locale en: no stored file in format(s) …* | The editor stores the files before publishing, so this means something else tried to publish without them, or the editor is older than the `RequireRendersToPublish` migration. Pull and restart the editor. |
+| `cv.cv_public_render` returns no row for a version published before the files migration | It has no files yet. Run the backfill (see *Backfilling public files*). |
 | "Saved somewhere else" | Another tab saved first. Reload to continue from the newest version (copy any text you need first). |
 | `403` from the API with a tool such as curl | Expected: changes must come from the editor's own page (`Origin`). |
 | Port 5180 is in use | Set `Editor__Port` to another port. |

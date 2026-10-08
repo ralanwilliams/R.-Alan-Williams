@@ -5,6 +5,7 @@ using Cv.Core.Rendering;
 using Cv.Core.Validation;
 using Cv.Data.Store;
 using Cv.Editor.Pdf;
+using Cv.Editor.Publishing;
 
 namespace Cv.Editor.Api;
 
@@ -144,7 +145,7 @@ internal static class EditorApi
             status.ToDictionary(s => s.Key, s => (IReadOnlyDictionary<string, string>)s.Value)));
     }
 
-    private static async Task<IResult> Save(SaveRequest request, EditorWorkspace workspace, ICvStore store, CancellationToken ct)
+    private static async Task<IResult> Save(SaveRequest request, EditorWorkspace workspace, ICvStore store, PublicFiles files, CancellationToken ct)
     {
         var prepared = await PrepareOrConflictAsync(workspace, request.BaseVersionId, request.Document, ct);
         if (prepared.Problem is { } problem)
@@ -168,12 +169,14 @@ internal static class EditorApi
         {
             return publish.Count == 0
                 ? Problems.NoChanges($"This is the same as v{unchanged.Info.Number}.")
-                : await PublishAndDescribeAsync(store, workspace, unchanged.Info.Id, publish, ct);
+                : await PublishAndDescribeAsync(store, workspace, files, unchanged.Info.Id, publish, ct);
         }
 
+        // The files are rendered before the save's transaction starts, so printing PDFs never holds it open.
+        var rendered = publish.Count == 0 ? [] : await files.RenderAsync(draft.Document, draft.Catalog, publish, ct);
         var user = await workspace.GetUserAsync(ct);
         var result = await store.SaveVersionAsync(
-            new NewVersion(request.BaseVersionId, draft.Document, user.Id, request.Summary, PublishLocales: publish), ct);
+            new NewVersion(request.BaseVersionId, draft.Document, user.Id, request.Summary, PublishLocales: publish, Files: rendered), ct);
         return await ToResultAsync(result, store, ct);
     }
 
@@ -197,7 +200,7 @@ internal static class EditorApi
             : await ToResultAsync(result, store, ct);
     }
 
-    private static async Task<IResult> Publish(PublishRequestDto request, EditorWorkspace workspace, ICvStore store, CancellationToken ct)
+    private static async Task<IResult> Publish(PublishRequestDto request, EditorWorkspace workspace, ICvStore store, PublicFiles files, CancellationToken ct)
     {
         var catalog = await store.GetCatalogAsync(ct);
         var locales = request.Locales.Distinct(StringComparer.Ordinal).ToList();
@@ -219,7 +222,7 @@ internal static class EditorApi
             }
         }
 
-        return await PublishAndDescribeAsync(store, workspace, request.VersionId, locales, ct);
+        return await PublishAndDescribeAsync(store, workspace, files, request.VersionId, locales, ct);
     }
 
     private static async Task<IResult> DownloadPdf(PdfRequest request, EditorWorkspace workspace, IPdfRenderer pdf, CancellationToken ct)
@@ -257,10 +260,11 @@ internal static class EditorApi
     }
 
     private static async Task<IResult> PublishAndDescribeAsync(
-        ICvStore store, EditorWorkspace workspace, Guid? versionId, IReadOnlyList<string> locales, CancellationToken ct)
+        ICvStore store, EditorWorkspace workspace, PublicFiles files, Guid? versionId, IReadOnlyList<string> locales, CancellationToken ct)
     {
+        var rendered = versionId is { } id ? await files.RenderMissingAsync(id, locales, ct) : [];
         var user = await workspace.GetUserAsync(ct);
-        var result = await store.PublishAsync(new PublishRequest(versionId, locales, user.Id), ct);
+        var result = await store.PublishAsync(new PublishRequest(versionId, locales, user.Id, Files: rendered), ct);
         if (result is PublishResult.Rejected rejected)
         {
             return Problems.Rejected(rejected.Message);

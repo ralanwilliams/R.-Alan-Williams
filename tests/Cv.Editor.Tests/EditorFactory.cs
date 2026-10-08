@@ -70,11 +70,24 @@ public sealed class EditorFactory : WebApplicationFactory<Program>
 
 public sealed class FakePdfRenderer : IPdfRenderer
 {
+    private int _count;
+
     public string? LastHtml { get; private set; }
+
+    /// <summary>How many PDFs were printed.</summary>
+    public int Count => _count;
+
+    /// <summary>When set, printing fails as it does on a computer without a browser.</summary>
+    public bool Unavailable { get; set; }
 
     public Task<byte[]> RenderAsync(string html, CancellationToken cancellationToken)
     {
+        if (Unavailable)
+        {
+            throw new PdfUnavailableException("No Chrome, Edge or Chromium found.");
+        }
         LastHtml = html;
+        Interlocked.Increment(ref _count);
         return Task.FromResult("%PDF-1.7 fake"u8.ToArray());
     }
 }
@@ -85,8 +98,22 @@ public sealed class InMemoryCvStore : ICvStore
     private readonly object _lock = new();
     private readonly List<(VersionInfo Info, CvDocument Document)> _versions = [];
     private readonly Dictionary<string, PublishedLocale> _published = new(StringComparer.Ordinal);
+    private readonly List<(Guid VersionId, string Locale)> _publications = [];
+    private readonly List<(Guid VersionId, RenderedFile File)> _files = [];
 
     public static readonly CvUser Author = new(Guid.Parse("0199a0a0-0000-7000-8000-000000000001"), "ada@example.com", "Ada Lovelace");
+
+    /// <summary>Every stored file, oldest first.</summary>
+    public IReadOnlyList<(Guid VersionId, RenderedFile File)> Files
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _files.ToList();
+            }
+        }
+    }
 
     public Task<CvCatalog> GetCatalogAsync(CancellationToken cancellationToken = default) => Task.FromResult(TestDocuments.Catalog);
 
@@ -160,10 +187,17 @@ public sealed class InMemoryCvStore : ICvStore
 
             var info = new VersionInfo(Guid.CreateVersion7(), (latest?.Number ?? 0) + 1, latest?.Id, version.RestoredFromVersionId,
                 version.Summary, hash, DateTimeOffset.UtcNow);
+            if (CheckFiles(info.Id, version.PublishLocales ?? [], version.Files ?? []) is { } refused)
+            {
+                return Task.FromResult<SaveResult>(new SaveResult.Rejected(refused));
+            }
+
             _versions.Add((info, version.Document));
+            _files.AddRange((version.Files ?? []).Select(f => (info.Id, f)));
             foreach (var locale in version.PublishLocales ?? [])
             {
                 _published[locale] = new PublishedLocale(locale, info.Id, DateTimeOffset.UtcNow);
+                _publications.Add((info.Id, locale));
             }
             return Task.FromResult<SaveResult>(new SaveResult.Saved(info));
         }
@@ -173,19 +207,88 @@ public sealed class InMemoryCvStore : ICvStore
     {
         lock (_lock)
         {
+            if (request.VersionId is { } versionId && CheckFiles(versionId, request.Locales, request.Files ?? []) is { } refused)
+            {
+                return Task.FromResult<PublishResult>(new PublishResult.Rejected(refused));
+            }
+
             foreach (var locale in request.Locales)
             {
                 if (request.VersionId is { } id)
                 {
                     _published[locale] = new PublishedLocale(locale, id, DateTimeOffset.UtcNow);
+                    _publications.Add((id, locale));
                 }
                 else
                 {
                     _published.Remove(locale);
                 }
             }
+            if (request.VersionId is { } withFiles)
+            {
+                _files.AddRange((request.Files ?? []).Select(f => (withFiles, f)));
+            }
             return Task.FromResult<PublishResult>(new PublishResult.Published());
         }
+    }
+
+    public Task<IReadOnlyList<StoredFile>> ListFilesAsync(Guid versionId, CancellationToken cancellationToken = default)
+    {
+        lock (_lock)
+        {
+            return Task.FromResult<IReadOnlyList<StoredFile>>(_files
+                .Where(f => f.VersionId == versionId)
+                .Select(f => new StoredFile(f.File.Locale, f.File.Format, f.File.RendererVersion))
+                .ToList());
+        }
+    }
+
+    public Task<IReadOnlyList<PublishedOnce>> ListEverPublishedAsync(CancellationToken cancellationToken = default)
+    {
+        lock (_lock)
+        {
+            return Task.FromResult<IReadOnlyList<PublishedOnce>>(_publications
+                .Distinct()
+                .Select(p => new PublishedOnce(p.VersionId, _versions.Single(v => v.Info.Id == p.VersionId).Info.Number, p.Locale))
+                .OrderBy(p => p.VersionNumber).ThenBy(p => p.Locale, StringComparer.Ordinal)
+                .ToList());
+        }
+    }
+
+    public Task AddFilesAsync(Guid versionId, IReadOnlyList<RenderedFile> files, CancellationToken cancellationToken = default)
+    {
+        lock (_lock)
+        {
+            if (CheckFiles(versionId, [], files) is { } refused)
+            {
+                throw new InvalidOperationException(refused);
+            }
+            _files.AddRange(files.Select(f => (versionId, f)));
+            return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>
+    /// What the database refuses: a file whose key is already stored (pk_cv_renders), an empty file,
+    /// or a publication without a file in every format (ADR 0003 §2). Null when all is well.
+    /// </summary>
+    private string? CheckFiles(Guid versionId, IReadOnlyList<string> publishLocales, IReadOnlyList<RenderedFile> newFiles)
+    {
+        var stored = _files.Where(f => f.VersionId == versionId).Select(f => f.File).ToList();
+        if (newFiles.FirstOrDefault(n => n.Content.Length == 0 || stored.Any(s => (s.Locale, s.Format, s.RendererVersion) == (n.Locale, n.Format, n.RendererVersion))) is { } bad)
+        {
+            return $"Refused file {bad.Locale}/{bad.Format}/{bad.RendererVersion}";
+        }
+
+        foreach (var locale in publishLocales)
+        {
+            var missing = new[] { "html", "md", "pdf" }.Where(format => !stored.Concat(newFiles).Any(f => f.Locale == locale && f.Format == format)).ToList();
+            if (missing.Count > 0)
+            {
+                return $"Cannot publish locale {locale}: no stored file in format(s) {string.Join(", ", missing)}";
+            }
+        }
+        return null;
     }
 
     public Task<IReadOnlyList<VersionChange>> DiffAsync(Guid fromVersionId, Guid toVersionId, CancellationToken cancellationToken = default) =>

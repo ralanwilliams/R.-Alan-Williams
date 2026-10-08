@@ -13,10 +13,10 @@ Work in progress. The data layer and the editor are built; public download links
 | Part | State |
 |---|---|
 | Content model and database schema | Done |
-| Database rules: history, translations, publishing | Done, with 70 schema tests |
+| Database rules: history, translations, publishing | Done, with 73 schema tests |
 | Migrations to Supabase | Done |
 | Editor (edit, save, publish, history, restore) | Done: a local web app ([guide](docs/cv-editor.md)) |
-| Renderer (HTML and PDF per language) | Done for the editor's preview and downloads; storing published PDFs is next |
+| Renderer (HTML, PDF and Markdown per language) | Done: the editor's preview and downloads, and the files stored on publish |
 | Public download links | Designed ([ADR 0003](docs/adr/0003-public-cv-downloads.md)); in progress |
 
 ## How it works

@@ -3,6 +3,7 @@ using Cv.Data;
 using Cv.Data.Store;
 using Cv.Editor.Api;
 using Cv.Editor.Pdf;
+using Cv.Editor.Publishing;
 using Cv.Editor.Security;
 using Microsoft.Extensions.Options;
 
@@ -37,6 +38,7 @@ public static class EditorHost
         builder.Services.AddSingleton<ICvStore, CvStore>();
         builder.Services.AddSingleton<EditorWorkspace>();
         builder.Services.AddSingleton<IPdfRenderer, ChromiumPdfRenderer>();
+        builder.Services.AddSingleton<PublicFiles>();
 
         builder.Services.AddProblemDetails();
         builder.Services.AddExceptionHandler<EditorExceptionHandler>();

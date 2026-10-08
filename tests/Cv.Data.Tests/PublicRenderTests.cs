@@ -24,7 +24,10 @@ public sealed class PublicRenderTests(PostgresServer server)
         public TestDatabase Database { get; } = database;
         public CvStore Store { get; } = store;
 
-        /// <summary>Saves the next version (headline changed to <paramref name="headline"/>), publishing it for <paramref name="publish"/>.</summary>
+        /// <summary>
+        /// Saves the next version (headline changed to <paramref name="headline"/>) and publishes it for
+        /// <paramref name="publish"/>, with files whose content is "{headline} {locale} {format}".
+        /// </summary>
         public async Task<VersionInfo> SaveAsync(string headline, params string[] publish)
         {
             var latest = await Store.GetLatestVersionAsync();
@@ -36,11 +39,12 @@ public sealed class PublicRenderTests(PostgresServer server)
                 Texts = draft.Texts.Select(t => t.NodeId == headlineId && t.Locale == "en" ? t with { Content = headline } : t).ToList(),
             };
             var document = DraftBuilder.Build(draft, baseDocument, catalog).Document;
-            var result = await Store.SaveVersionAsync(new NewVersion(latest?.Id, document, Author, PublishLocales: publish));
+            var result = await Store.SaveVersionAsync(
+                new NewVersion(latest?.Id, document, Author, PublishLocales: publish, Files: TestFiles.For(headline, publish)));
             return Assert.IsType<SaveResult.Saved>(result).Version;
         }
 
-        /// <summary>Stores a file the way the editor will: as the app role, with its SHA-256.</summary>
+        /// <summary>Stores a file as the app role, with its SHA-256, without publishing anything.</summary>
         public async Task AddRenderAsync(Guid versionId, string locale, string format, string content, string rendererVersion = "test/1")
         {
             var bytes = Encoding.UTF8.GetBytes(content);
@@ -96,43 +100,41 @@ public sealed class PublicRenderTests(PostgresServer server)
     public async Task The_latest_published_version_is_served_with_its_name_and_hash()
     {
         var f = await NewFixtureAsync();
-        var v1 = await f.SaveAsync("Engineer", "en");
-        await f.AddRenderAsync(v1.Id, "en", "pdf", "v1 en pdf");
+        await f.SaveAsync("Engineer", "en");
 
         var file = await f.GetAsync("en", "pdf");
 
         Assert.NotNull(file);
         Assert.Equal(1, file.VersionNumber);
         Assert.Equal("Ada Lovelace", file.Name);
-        Assert.Equal("v1 en pdf", Encoding.UTF8.GetString(file.Content));
+        Assert.Equal("Engineer en pdf", Encoding.UTF8.GetString(file.Content));
         Assert.Equal(SHA256.HashData(file.Content), file.ContentHash);
+        Assert.Equal("Engineer en md", Text(await f.GetAsync("en", "md")));
+        Assert.Equal("Engineer en html", Text(await f.GetAsync("en", "html")));
     }
 
     [Fact]
     public async Task Publishing_a_newer_version_changes_what_latest_serves_and_keeps_the_permalink()
     {
         var f = await NewFixtureAsync();
-        var v1 = await f.SaveAsync("Engineer", "en");
-        await f.AddRenderAsync(v1.Id, "en", "pdf", "v1");
-        var v2 = await f.SaveAsync("Principal engineer", "en");
-        await f.AddRenderAsync(v2.Id, "en", "pdf", "v2");
+        await f.SaveAsync("v1", "en");
+        await f.SaveAsync("v2", "en");
 
-        Assert.Equal("v2", Text(await f.GetAsync("en", "pdf")));
-        Assert.Equal("v1", Text(await f.GetAsync("en", "pdf", version: 1))); // what an employer received
-        Assert.Equal("v2", Text(await f.GetAsync("en", "pdf", version: 2)));
+        Assert.Equal("v2 en pdf", Text(await f.GetAsync("en", "pdf")));
+        Assert.Equal("v1 en pdf", Text(await f.GetAsync("en", "pdf", version: 1))); // what an employer received
+        Assert.Equal("v2 en pdf", Text(await f.GetAsync("en", "pdf", version: 2)));
     }
 
     [Fact]
     public async Task A_draft_is_never_served_even_with_its_number_and_files()
     {
         var f = await NewFixtureAsync();
-        var v1 = await f.SaveAsync("Engineer", "en");
-        await f.AddRenderAsync(v1.Id, "en", "pdf", "v1");
+        await f.SaveAsync("v1", "en");
         var v2 = await f.SaveAsync("Unpublished draft"); // saved, never published
         await f.AddRenderAsync(v2.Id, "en", "pdf", "draft");
 
         Assert.Null(await f.GetAsync("en", "pdf", version: 2));
-        Assert.Equal("v1", Text(await f.GetAsync("en", "pdf")));
+        Assert.Equal("v1 en pdf", Text(await f.GetAsync("en", "pdf")));
     }
 
     [Fact]
@@ -140,7 +142,6 @@ public sealed class PublicRenderTests(PostgresServer server)
     {
         var f = await NewFixtureAsync();
         var v1 = await f.SaveAsync("Engineer", "en");
-        await f.AddRenderAsync(v1.Id, "en", "pdf", "en");
         await f.AddRenderAsync(v1.Id, "nb", "pdf", "nb, never published");
 
         Assert.Null(await f.GetAsync("nb", "pdf"));
@@ -151,13 +152,12 @@ public sealed class PublicRenderTests(PostgresServer server)
     public async Task Unpublishing_empties_latest_but_keeps_permalinks()
     {
         var f = await NewFixtureAsync();
-        var v1 = await f.SaveAsync("Engineer", "en", "nb");
-        await f.AddRenderAsync(v1.Id, "nb", "pdf", "nb");
+        await f.SaveAsync("v1", "en", "nb");
 
         Assert.IsType<PublishResult.Published>(await f.Store.PublishAsync(new PublishRequest(null, ["nb"], Author)));
 
         Assert.Null(await f.GetAsync("nb", "pdf"));
-        Assert.Equal("nb", Text(await f.GetAsync("nb", "pdf", version: 1)));
+        Assert.Equal("v1 nb pdf", Text(await f.GetAsync("nb", "pdf", version: 1)));
     }
 
     [Fact]
@@ -175,15 +175,14 @@ public sealed class PublicRenderTests(PostgresServer server)
     [InlineData("en", "docx", null)]   // unknown format
     [InlineData("de", "pdf", null)]    // unknown locale
     [InlineData("zxx", "pdf", null)]   // never publishable
-    [InlineData("en", "md", null)]     // no file in that format
+    [InlineData("nb", "pdf", null)]    // never published in that language
     [InlineData("en", "pdf", 99)]      // no such version
     [InlineData("en", "pdf", 0)]
     [InlineData("en", "pdf", -1)]
     public async Task Anything_else_returns_nothing(string locale, string format, int? version)
     {
         var f = await NewFixtureAsync();
-        var v1 = await f.SaveAsync("Engineer", "en");
-        await f.AddRenderAsync(v1.Id, "en", "pdf", "v1");
+        await f.SaveAsync("Engineer", "en");
 
         Assert.Null(await f.GetAsync(locale, format, version));
     }
