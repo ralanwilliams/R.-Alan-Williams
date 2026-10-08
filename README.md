@@ -15,7 +15,7 @@ The data layer, the editor and the public download links are built and live.
 | Content model and database schema | Done |
 | Database rules: history, translations, publishing | Done, with 73 schema tests |
 | Migrations to Supabase | Done |
-| Editor (edit, save, publish, history, restore) | Done: a local web app ([guide](docs/cv-editor.md)) |
+| Editor (edit, save, publish, history, restore) | Done: a local web app ([guide](docs/cv-editor.md)), also reachable at editor.ralanwilliams.com through a Cloudflare Tunnel behind Access ([ADR 0004](docs/adr/0004-remote-editor-access.md)) |
 | Renderer (HTML, PDF and Markdown per language) | Done: the editor's preview and downloads, and the files stored on publish |
 | Public download links | Done: a Cloudflare Pages Function over Hyperdrive ([guide](docs/cv-public.md), [ADR 0003](docs/adr/0003-public-cv-downloads.md)), with a daily keep-alive Worker |
 
@@ -59,6 +59,7 @@ Each significant decision is written up as an Architecture Decision Record (ADR)
 | [0001](docs/adr/0001-cv-content-model.md) | CV content model: an immutable, versioned tree with per-locale text | Accepted | 2026-10-06 |
 | [0002](docs/adr/0002-cv-editor.md) | CV editor: a local web app over the versioned store | Accepted | 2026-10-06 |
 | [0003](docs/adr/0003-public-cv-downloads.md) | Public CV downloads: files stored on publish, served from the database | Accepted | 2026-10-06 |
+| [0004](docs/adr/0004-remote-editor-access.md) | Remote editor access: a Cloudflare Tunnel behind Cloudflare Access | Accepted | 2026-10-08 |
 <!-- adr-index:end -->
 
 ## Repository layout
@@ -77,7 +78,7 @@ Each significant decision is written up as an Architecture Decision Record (ADR)
 ├── docs/cv-database.md  database setup and migration guide
 ├── docs/cv-editor.md    editor setup, use and tests
 ├── docs/cv-public.md    public download setup (Hyperdrive, Pages, rate limit)
-└── scripts/             helper scripts
+└── scripts/             helper scripts: .env loading, the ADR index, starting the editor at boot
 ```
 
 ## Getting started

@@ -15,6 +15,7 @@ tests/            Cv.Core.Tests, Cv.Data.Tests (PostgreSQL), Cv.Editor.Tests (HT
 |---|---|---|
 | **.NET 10 SDK** (10.0.100 or later) | Builds and runs everything | See [cv-database.md §1](cv-database.md#1-tooling) |
 | **Chrome, Edge or Chromium** | Prints PDFs (Download PDF, publishing) | Found automatically in the usual install locations, or set `CV_CHROMIUM_PATH` |
+| cloudflared *(optional)* | Remote access through a Cloudflare Tunnel | `winget install --id Cloudflare.cloudflared`; see *Remote access* |
 | Node.js 22+ *(optional)* | Runs the browser-side unit tests | Not needed to use the editor |
 | Docker *(optional)* | Starts PostgreSQL for the integration tests | Or point `CV_TEST_POSTGRES` at a disposable server |
 
@@ -137,17 +138,72 @@ dotnet run --project src/Cv.Editor -- backfill             # render and store it
 
 It renders every format that has no file from the current renderer, for each version and language that has ever been published, including languages that were unpublished later. Drafts are skipped. Old files are kept, since stored files are never changed or deleted, and the public site serves the newest. Each version is stored in its own transaction, so if the command stops part-way, run it again to continue. A run with nothing to do prints *none*.
 
+## Remote access (editor.ralanwilliams.com)
+
+The editor can also be used from any browser, through a Cloudflare Tunnel to this computer, behind Cloudflare Access ([ADR 0004](adr/0004-remote-editor-access.md)). It still runs here. It's reachable while this computer is on, awake and online, and comes back by itself after a restart. Everything here is free.
+
+Set it up in this order. The Access application must exist **before** the tunnel route, so the hostname is never reachable without a login.
+
+**1. Zero Trust.** In the Cloudflare dashboard, open **Zero Trust** and pick the **Free** plan if asked. Under **Settings**, note your **team domain**, e.g. `ralanwilliams.cloudflareaccess.com`.
+
+**2. The Access application.** **Access → Applications → Add an application → Self-hosted**:
+
+| Setting | Value |
+|---|---|
+| Application name | CV editor |
+| Session duration | 24 hours |
+| Public hostname | `editor` . `ralanwilliams.com` |
+| Policy | *Allow*, **Include → Emails →** your email. It must be the email in `cv.users`. |
+| Login methods | *One-time PIN* works out of the box. Google or GitHub with MFA is stronger (ADR 0004, Consequences). |
+
+After saving, open the application and copy its **Application Audience (AUD) Tag**.
+
+**3. The tunnel.** **Networks → Tunnels → Create a tunnel → Cloudflared**, named `cv-editor`.
+- Choose **Windows**, install `cloudflared` (`winget install --id Cloudflare.cloudflared`), and run the `cloudflared.exe service install …` command the dashboard shows, in an **elevated** PowerShell. It runs as a Windows service from then on.
+- Add a **public hostname**: subdomain `editor`, domain `ralanwilliams.com`, service **HTTP** `localhost:5180`.
+- The tunnel should show as **Healthy**.
+
+**4. The editor's settings.** Add to `.env`:
+
+```dotenv
+CV_EDITOR_PUBLIC_HOST=editor.ralanwilliams.com
+CV_ACCESS_TEAM_DOMAIN=<team>.cloudflareaccess.com
+CV_ACCESS_AUD=<the AUD tag>
+```
+
+None of these are secrets. They tell the editor which tokens to accept. Set all three or none: the editor refuses to start with only some.
+
+**5. Start it at boot.** In an **elevated** PowerShell, from the repository root:
+
+```powershell
+./scripts/Register-EditorTask.ps1      # registers the task and starts the editor; no password needed
+```
+
+- **What it does:** registers a *CV editor* task that runs at startup, before anyone logs in. The task runs `scripts/Start-Editor.ps1`, which loads `.env`, starts the editor in Production mode and starts it again whenever it stops.
+- **Logs:** `%LOCALAPPDATA%\cv-editor\editor.log`.
+- **After code changes:** pull the changes, then restart the task (`Stop-ScheduledTask "CV editor"; Start-ScheduledTask "CV editor"`). It rebuilds on start.
+- **Removing it:** `./scripts/Register-EditorTask.ps1 -Unregister`.
+- **Port clash:** while the task runs, it holds port 5180, so stop it before running `dotnet run --project src/Cv.Editor` by hand. Or just use http://localhost:5180, which the task's editor serves too.
+
+**6. Keep the computer awake** while plugged in. In **Settings → System → Power**, set *sleep when plugged in* to **Never**, or run `powercfg /change standby-timeout-ac 0`. Windows Update restarts are fine: everything starts again by itself.
+
+**7. Check it** from your phone, off Wi-Fi:
+- Open https://editor.ralanwilliams.com. Access asks you to sign in, then the editor opens.
+- Publish something small (or just open History) to check that saving and PDFs work from the task too.
+
 ## Security model
 
-The editor has no login. It relies on never being reachable by anyone but you (ADR 0002 §2):
+The editor has no login of its own (ADR 0002 §2):
 
 - it listens on loopback only and rejects non-loopback peers;
-- it rejects any `Host` other than `localhost`, which stops DNS rebinding;
+- it rejects any `Host` other than `localhost` (and, with remote access configured, `editor.ralanwilliams.com`), which stops DNS rebinding;
 - it requires its own `Origin` on every change, which stops other sites in your browser from posting to it (CSRF);
 - it serves a strict Content Security Policy;
 - it connects as `cv_api`, which can only read and append.
 
-Don't expose it through a tunnel or a port forward: it would need real authentication first.
+**Through the tunnel** (ADR 0004 §3), Cloudflare Access signs you in before any request reaches this computer. The editor checks for itself that every request through Cloudflare carries a valid Access token for your email. So a mistake in the Access settings still doesn't open it to anyone else.
+
+Never expose the editor any other way, such as a port forward or another tunnel route without Access. There is no reboot or remote desktop through the tunnel, by design (ADR 0004 §5).
 
 ## Run the tests
 
@@ -184,3 +240,9 @@ CI (`.github/workflows/ci.yml`) runs on every push and pull request. It builds w
 | Port 5180 is in use | Set `Editor__Port` to another port. |
 | "The editor cannot start" with *cv.json has a problem at $.children…* | Fix the seed file at that path and reload. |
 | *Unknown node type 'location'* in the problems list after opening the seed | The `AddLocationNodeType` migration hasn't been applied: `dotnet run --project src/Cv.Migrator`, then restart the editor. |
+| editor.ralanwilliams.com shows Cloudflare error 1033 or 502 | The tunnel can't reach the editor. The computer is off or asleep, `cloudflared` isn't running (**Services → Cloudflared agent**), or the editor isn't running: check `%LOCALAPPDATA%\cv-editor\editor.log` and the *CV editor* task. |
+| `403` *Sign in through Cloudflare Access first* through the tunnel | No valid Access token reached the editor. Check that `CV_ACCESS_TEAM_DOMAIN` and `CV_ACCESS_AUD` match the dashboard; the editor log says why it refused. |
+| `403` *… is not the CV's author* | The Access policy let in an email that isn't the one in `cv.users`. Sign in with the author's email, and tighten the policy. |
+| `403` *Remote access to the editor is not set up* | The tunnel reached an editor without the three remote-access settings. Add them to `.env` and restart the task. |
+| The editor won't start: *Remote access needs all three of …* | Set `CV_EDITOR_PUBLIC_HOST`, `CV_ACCESS_TEAM_DOMAIN` and `CV_ACCESS_AUD`, or remove all three. |
+| Port 5180 in use when running the editor by hand | The *CV editor* task is running it already. Use it, or `Stop-ScheduledTask "CV editor"` first. |

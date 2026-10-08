@@ -125,4 +125,4 @@ A small Cloudflare Worker with a daily Cron Trigger calls `cv.cv_public_render` 
 ## Follow-ups
 
 - **Download counts:** an append-only counter the Function can write without reading anything, or Cloudflare Analytics Engine.
-- **Hosting the editor** behind Cloudflare Access, so it can publish from anywhere: its own ADR.
+- **Hosting the editor** behind Cloudflare Access, so it can publish from anywhere: its own ADR. *Decided in [ADR 0004](0004-remote-editor-access.md): a Cloudflare Tunnel to the local editor, behind Access.*

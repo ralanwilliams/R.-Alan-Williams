@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <!-- The CV editor: a local web app (loopback only) over the cv schema. See docs/adr/0002-cv-editor.md. -->
+  <!-- The CV editor: a local web app (loopback only, optionally reached through Cloudflare Access) over the cv schema. See docs/adr/0002-cv-editor.md and 0004. -->
 
   <PropertyGroup>
     <RootNamespace>Cv.Editor</RootNamespace>
@@ -13,6 +13,8 @@
 
   <ItemGroup>
     <PackageReference Include="PuppeteerSharp" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+    <PackageReference Include="Microsoft.IdentityModel.Protocols" />
   </ItemGroup>
 
   <ItemGroup>

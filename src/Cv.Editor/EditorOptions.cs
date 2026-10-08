@@ -7,6 +7,9 @@ public sealed class EditorOptions
     public const string UserEmailVariable = "CV_EDITOR_USER_EMAIL";
     public const string ChromiumPathVariable = "CV_CHROMIUM_PATH";
     public const string SeedFileVariable = "CV_SEED_FILE";
+    public const string PublicHostVariable = "CV_EDITOR_PUBLIC_HOST";
+    public const string AccessTeamDomainVariable = "CV_ACCESS_TEAM_DOMAIN";
+    public const string AccessAudienceVariable = "CV_ACCESS_AUD";
     public const string PortSetting = "Editor:Port";
     public const int DefaultPort = 5180;
 
@@ -28,4 +31,26 @@ public sealed class EditorOptions
     /// written until the author saves (ADR 0002 §11).
     /// </summary>
     public string? SeedFile { get; set; }
+
+    /// <summary>
+    /// The hostname a Cloudflare Tunnel serves the editor at, e.g. <c>editor.ralanwilliams.com</c>
+    /// (ADR 0004). Null keeps the editor local-only. When set, <see cref="AccessTeamDomain"/> and
+    /// <see cref="AccessAudience"/> are required: every request through the tunnel must carry a
+    /// valid Cloudflare Access token for the author.
+    /// </summary>
+    public string? PublicHost { get; set; }
+
+    /// <summary>The Zero Trust team domain that signs Access tokens, e.g. <c>ralanwilliams.cloudflareaccess.com</c>.</summary>
+    public string? AccessTeamDomain { get; set; }
+
+    /// <summary>The Access application's AUD tag: tokens for any other application are refused.</summary>
+    public string? AccessAudience { get; set; }
+
+    public const string RemoteAccessIncomplete =
+        $"Remote access needs all three of {PublicHostVariable}, {AccessTeamDomainVariable} and " +
+        $"{AccessAudienceVariable}, or none of them (docs/cv-editor.md, Remote access).";
+
+    /// <summary>Remote access is either off (none of the three settings) or fully configured.</summary>
+    public bool RemoteAccessIsConsistent =>
+        (PublicHost is null) == (AccessTeamDomain is null) && (PublicHost is null) == (AccessAudience is null);
 }
