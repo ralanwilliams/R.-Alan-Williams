@@ -12,7 +12,7 @@
     "build:keep-alive": "wrangler deploy --dry-run --config workers/keep-alive/wrangler.toml --outdir .wrangler/keep-alive-check",
     "dev:keep-alive": "wrangler dev --test-scheduled --config workers/keep-alive/wrangler.toml",
     "deploy:keep-alive": "wrangler deploy --config workers/keep-alive/wrangler.toml",
-    "test": "node --test \"tests/Cv.Editor.Js/*.test.mjs\" \"tests/Cv.Public.Js/*.test.mjs\""
+    "test": "node --test \"tests/Cv.Editor.Js/*.test.mjs\" \"tests/Cv.Public.Js/*.test.mjs\" \"tests/Site.Js/*.test.mjs\""
   },
   "dependencies": {
     "pg": "8.23.1"
