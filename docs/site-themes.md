@@ -44,7 +44,7 @@ Add `?theme=<name>` to the URL to see a theme on any day, for example `http://lo
 
 `?theme=all` is for testing: it shows every theme in `THEMES` in turn, `ALL_SECONDS` (10) each, with a tag in the corner naming the theme and counting down to the next. Themes can't be unloaded, so it reloads the page between them. Which theme is up comes from the clock (each 10-second slot belongs to one theme), so nothing has to be remembered between reloads.
 
-To show a theme on every visit whatever the date, set `FORCE_THEME` in `themes.js` to its name or `'all'`. A `?theme=` in the URL still beats it. Set it back to `null` before release.
+Without `?theme=` in the URL, the date alone decides; nothing in the code can force a theme for every visitor. A test checks this.
 
 ## How a theme is loaded
 

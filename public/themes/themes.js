@@ -7,9 +7,9 @@
 // A yearly range may run over New Year: { from: '12-20', to: '01-06' }.
 // Where ranges overlap, the first theme listed wins.
 //
-// To preview a theme on any day, add ?theme=<name> to the URL; ?theme=none shows no theme.
-// ?theme=all is for testing: it shows every theme in turn, ALL_SECONDS each, reloading the
-// page between them.
+// Without ?theme= in the URL, the date alone decides. To preview a theme on any day, add
+// ?theme=<name>; ?theme=none shows no theme. ?theme=all is for testing: it shows every
+// theme in turn, ALL_SECONDS each, reloading the page between them.
 export const THEMES = [
     { name: 'new-year', from: '12-31', to: '01-02' },
     { name: 'groundhog', from: '01-31', to: '02-03' },
@@ -21,9 +21,6 @@ export const THEMES = [
     { name: 'christmas', from: '11-29', to: '12-30' },
 ];
 
-// Testing only: a theme name (or 'all') shown on every visit, whatever the date. A ?theme=
-// in the URL still beats it. Set back to null before release.
-export const FORCE_THEME = 'all';
 export const ALL_SECONDS = 10;
 
 const YEARLY = /^\d{2}-\d{2}$/, FIXED = /^\d{4}-\d{2}-\d{2}$/;
@@ -96,15 +93,22 @@ function rotationTag(theme, index, left) {
     document.body.appendChild(tag);
 }
 
+// What a visit to the page shows, from its query string and the date: the theme for the
+// date, or the one ?theme= names, or the testing rotation for ?theme=all
+export function forVisit(search, date) {
+    const asked = new URLSearchParams(search).get('theme');
+    if (asked === 'all') return { rotate: true };
+    return { theme: pickTheme(THEMES, date, asked) };
+}
+
 if (typeof document !== 'undefined') {
-    const override = new URLSearchParams(location.search).get('theme') ?? FORCE_THEME;
-    if (override === 'all') {
+    const visit = forVisit(location.search, new Date());
+    if (visit.rotate) {
         const { theme, index, left } = rotation(THEMES, Date.now());
         load(theme);
         rotationTag(theme, index, left);
         setTimeout(() => location.reload(), left + 50);
-    } else {
-        const theme = pickTheme(THEMES, new Date(), override);
-        if (theme) load(theme);
+    } else if (visit.theme) {
+        load(visit.theme);
     }
 }

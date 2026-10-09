@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, existsSync } from 'node:fs';
-import { THEMES, FORCE_THEME, ALL_SECONDS, inRange, pickTheme, rotation } from '../../public/themes/themes.js';
+import { THEMES, ALL_SECONDS, inRange, pickTheme, rotation, forVisit } from '../../public/themes/themes.js';
 
 const themesDir = new URL('../../public/themes/', import.meta.url);
 
@@ -103,6 +103,12 @@ test('?theme=all shows each theme in turn for ALL_SECONDS, then starts again', (
     assert.equal(rotation(THEMES, start + span * THEMES.length).index, 0);
 });
 
-test('a forced theme is one that exists', () => {
-    assert.ok(FORCE_THEME === null || FORCE_THEME === 'all' || THEMES.some(t => t.name === FORCE_THEME), FORCE_THEME);
+test('a plain visit gets the theme for its date, and only ?theme=all rotates', () => {
+    assert.equal(forVisit('', on(2027, 10, 9)).theme.name, 'halloween');
+    assert.equal(forVisit('', on(2027, 8, 15)).theme, null);
+    assert.equal(forVisit('?utm_source=x', on(2027, 12, 25)).theme.name, 'christmas');
+    assert.equal(forVisit('?theme=easter', on(2027, 10, 9)).theme.name, 'easter');
+    assert.equal(forVisit('?theme=none', on(2027, 10, 9)).theme, null);
+    assert.deepEqual(forVisit('?theme=all', on(2027, 10, 9)), { rotate: true });
+    assert.equal(forVisit('', on(2027, 10, 9)).rotate, undefined);
 });
