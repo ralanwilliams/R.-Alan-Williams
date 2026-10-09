@@ -39,21 +39,48 @@
             letter-spacing: 2px;
         }
 
+        /* An old shop sign: a wooden board with a bevelled edge, a groove routed round
+           the inside, and the lettering carved into it. The grain is fractal noise
+           stretched along the board. */
         .logo-box {
+            position: relative;
             display: inline-block;
-            background-color: #2b4a6f;
-            padding: 20px 28px 18px;
+            padding: 28px 36px 24px;
             margin-bottom: 80px;
             text-align: left;
+            border-radius: 6px;
+            background:
+                radial-gradient(ellipse 14px 6px at 16% 72%, rgba(60, 30, 10, 0.55), transparent),
+                radial-gradient(ellipse 22px 8px at 81% 24%, rgba(60, 30, 10, 0.45), transparent),
+                radial-gradient(ellipse at 50% 35%, rgba(255, 215, 160, 0.22), transparent 70%),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='320'%3E%3Cfilter id='g' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.006 0.11' numOctaves='4' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.24 0 0 0 0 0.13 0 0 0 0 0.05 0 0 0 2 -0.6'/%3E%3C/filter%3E%3Crect width='640' height='320' filter='url(%23g)'/%3E%3C/svg%3E") 0 0 / 640px 320px,
+                linear-gradient(#a06c3c, #8c5a2e 55%, #774a24);
+            box-shadow:
+                inset 3px 3px 0 rgba(255, 222, 175, 0.28),
+                inset -3px -3px 0 rgba(0, 0, 0, 0.35),
+                0 0 0 4px #4a2c14,
+                0 10px 18px rgba(0, 0, 0, 0.35);
         }
 
+        .logo-box::after {
+            content: '';
+            position: absolute;
+            inset: 10px;
+            border-radius: 3px;
+            box-shadow: inset 1.5px 1.5px 1px rgba(30, 14, 4, 0.7), 1px 1px 0 rgba(255, 222, 175, 0.35);
+            pointer-events: none;
+        }
+
+        /* Carved letters: dark in the cut, shadowed along the top edge and catching
+           the light along the bottom */
         .logo-box h2 {
             font-family: 'Anton', Impact, 'Arial Narrow', sans-serif;
             font-weight: 400;
-            color: #ffffff;
+            color: #3a200c;
             font-size: 4.5rem;
             line-height: 0.95;
             letter-spacing: 1px;
+            text-shadow: -1px -1px 1px rgba(20, 8, 0, 0.6), 1px 1.5px 0 rgba(255, 220, 170, 0.45);
         }
 
         .logo-box h2 > span {
@@ -65,37 +92,41 @@
             align-items: baseline;
         }
 
-        /* Comma sits on the WILLIAMS baseline, flush with the outside edge of the N above */
+        /* The tag sits at the end of WILLIAMS, flush with the outside edge of the N above.
+           It holds only a zero-width space, which gives it the line box DEV is placed by. */
         .logo-box .tag {
             margin-left: auto;
             position: relative;
         }
 
-        /* DEV is rotated to read top-to-bottom and stands on top of the comma */
+        /* DEV is rotated to read top-to-bottom, at the right-hand end of WILLIAMS. Its size
+           and place make it run from the top of the WILLIAMS capitals to their baseline. */
         .logo-box .dev {
             position: absolute;
             right: 0.139em;
-            bottom: 0.415em;
+            bottom: 0.095em;
             writing-mode: vertical-rl;
-            font-size: 0.505em;
+            font-size: 0.602em;
             line-height: 0.75;
             letter-spacing: 1px;
-            color: #bdcfe6;
+            color: #e2b84a;                /* carved, then gilded */
+            text-shadow: -1px -1px 1px rgba(60, 30, 0, 0.7), 1px 1px 0 rgba(255, 236, 190, 0.5);
         }
 
         .logo-box p {
             font-family: 'Oswald', 'Arial Narrow', sans-serif;
-            font-weight: 400;
-            color: #ffffff;
+            font-weight: 500;
+            color: #f3d77e;                /* gilded, to read at this size */
             font-size: 1rem;
             margin-top: 10px;
+            text-shadow: -1px -1px 0 rgba(40, 18, 0, 0.75), 1px 1px 0 rgba(255, 236, 190, 0.35);
             display: flex;
             justify-content: space-between;
         }
 
-        /* Dig site: the jackhammer plus one hole per project, oldest on the left.
-           The newest hole is centred on the bit tip, measured from jackhammer.gif
-           at (92, 214) of 250 x 237. */
+        /* Dig site: the digger plus one hole per project, oldest on the left.
+           The newest hole is centred on the bit tip, at (92, 214) in the digger's
+           250 x 237 drawing. */
         .dig-site {
             --jh-w: 220px;
             --jh-h: calc(var(--jh-w) * 237 / 250);
@@ -110,14 +141,37 @@
             padding-bottom: calc(60px * var(--s));
         }
 
-        .dig-site > img {
+        .digger {
             display: block;
             position: relative;
             z-index: 4;
             width: var(--jh-w);
             height: auto;
             margin: 0 auto;
+            overflow: visible;
             pointer-events: none;
+        }
+
+        /* The chisel bit hammers up and down, sliding into the collar */
+        .digger .chisel {
+            animation: hammer 0.66s steps(1) infinite;
+        }
+
+        @keyframes hammer {
+            50% { transform: translateY(-7px); }
+        }
+
+        /* Hand tools a theme gives him (a spade, a shovel) dig instead */
+        .digger .tool.dig {
+            animation: dig 0.9s ease-in-out infinite;
+        }
+
+        @keyframes dig {
+            50% { transform: translateY(-7px); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .digger .chisel, .digger .tool.dig { animation: none; }
         }
 
         .holes {
@@ -274,37 +328,6 @@
             .chip { display: none; }
         }
 
-        .coming-soon {
-            font-size: 2.8rem;
-            font-weight: bold;
-            margin-top: 40px;
-            letter-spacing: 1px;
-            line-height: 1.4;
-        }
-
-        .coming-soon .word-coming {
-            color: #4169e1;
-        }
-
-        .christmas-text {
-            display: inline;
-        }
-
-        .letter-c { color: #dc143c; }
-        .letter-h { color: #228b22; }
-        .letter-r { color: #dc143c; }
-        .letter-i { color: #228b22; }
-        .letter-s { color: #dc143c; }
-        .letter-t { color: #228b22; }
-        .letter-m { color: #dc143c; }
-        .letter-a { color: #228b22; }
-        .letter-s2 { color: #dc143c; }
-        .year-2-1 { color: #228b22; }
-        .year-0-1 { color: #dc143c; }
-        .year-0-2 { color: #228b22; }
-        .year-2-2 { color: #dc143c; }
-        .exclamation { color: #228b22; }
-
         @media (max-width: 600px) {
             h1 {
                 font-size: 2.2rem;
@@ -312,8 +335,12 @@
             }
 
             .logo-box {
-                padding: 14px 18px 12px;
+                padding: 20px 24px 17px;
                 margin-bottom: 50px;
+            }
+
+            .logo-box::after {
+                inset: 7px;
             }
 
             .logo-box h2 {
@@ -330,33 +357,58 @@
                 --s: 0.75;
                 margin: 40px 0;
             }
-
-            .coming-soon {
-                font-size: 1.8rem;
-            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Under Construction</h1>
-
         <div class="logo-box">
-            <h2><span>ROBERT ALAN</span><span class="line-2">WILLIAMS<span class="tag">,<span class="dev">DEV</span></span></span></h2>
+            <h2><span>ROBERT ALAN</span><span class="line-2">WILLIAMS<span class="tag">&#8203;<span class="dev">DEV</span></span></span></h2>
             <p aria-label="Full Stack Developer"><span>F</span><span>U</span><span>L</span><span>L</span><span></span><span>S</span><span>T</span><span>A</span><span>C</span><span>K</span><span></span><span>D</span><span>E</span><span>V</span><span>E</span><span>L</span><span>O</span><span>P</span><span>E</span><span>R</span></p>
         </div>
 
         <div class="dig-site">
-            <img src="images/jackhammer.gif" alt="Stick figure in a Santa hat operating a jackhammer" width="250" height="237">
+            <!-- The digger. Themes dress him through costume() in themes/kit.js: the tool
+                 group holds his jackhammer, the hat group his Santa hat, "under" is drawn
+                 behind him and "over" in front. -->
+            <svg class="digger" viewBox="0 0 250 237" width="250" height="237" role="img"
+                 aria-label="Stick figure in a Santa hat operating a jackhammer">
+                <defs>
+                    <linearGradient id="digger-steel" x1="0" x2="1">
+                        <stop offset="0" stop-color="#9a9a9a"/>
+                        <stop offset="0.12" stop-color="#e6e6e6"/>
+                        <stop offset="0.45" stop-color="#f7f7f7"/>
+                        <stop offset="0.75" stop-color="#cdcdcd"/>
+                        <stop offset="1" stop-color="#8c8c8c"/>
+                    </linearGradient>
+                </defs>
+                <g class="under"></g>
+                <g class="tool">
+                    <g class="chisel">
+                        <rect x="90" y="194" width="4.5" height="18" fill="#a9a9a9"/>
+                        <ellipse cx="92.2" cy="213" rx="4.2" ry="1.9" fill="#8a8a8a"/>
+                    </g>
+                    <g stroke="#8a8a8a" stroke-width="0.6">
+                        <rect x="84" y="184" width="16.5" height="13" rx="3" fill="url(#digger-steel)"/>
+                        <rect x="81" y="127" width="22.5" height="60" rx="7" fill="url(#digger-steel)"/>
+                        <rect x="89.5" y="111" width="5.5" height="17" fill="#c4c4c4"/>
+                        <rect x="77" y="104" width="34" height="7" rx="3.5" fill="url(#digger-steel)"/>
+                    </g>
+                </g>
+                <g fill="none" stroke="#000" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M142 72L156 128L128 162L130 212M156 128L145 176L148 222"/>
+                    <path d="M141 74L114 97L105 101L84 104Q78 106 80 112Q81 115 84 117"/>
+                    <path d="M141 78L130 100L113 104L103 107Q99 109 100 113Q101 116 104 117"/>
+                </g>
+                <circle cx="129" cy="58" r="16.5" fill="#000"/>
+                <g class="hat">
+                    <path d="M119 43C119 28 126 13 137 10C147 8 155 14 160 21C153 20 148 25 145 45Z" fill="#df0e00"/>
+                    <path d="M114 42Q130 40 146 44L146 53Q130 50 113 50Z" fill="#f3f1f1"/>
+                    <circle cx="160" cy="22" r="6" fill="#f3f1f1"/>
+                </g>
+                <g class="over"></g>
+            </svg>
             <ol class="holes" aria-label="Projects, oldest first"></ol>
-        </div>
-
-        <div class="coming-soon">
-            <span class="word-coming">Coming</span>
-            <span class="christmas-text">
-                <span class="letter-c">C</span><span class="letter-h">h</span><span class="letter-r">r</span><span class="letter-i">i</span><span class="letter-s">s</span><span class="letter-t">t</span><span class="letter-m">m</span><span class="letter-a">a</span><span class="letter-s2">s</span>
-            </span>
-            <span class="year-2-1">2</span><span class="year-0-1">0</span><span class="year-0-2">0</span><span class="year-2-2">2</span><span class="exclamation">!</span>
         </div>
     </div>
 
@@ -632,5 +684,6 @@
         fitHoles();
         new ResizeObserver(fitHoles).observe(list);
     </script>
+    <script type="module" src="themes/themes.js"></script>
 </body>
 </html>

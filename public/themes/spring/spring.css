@@ -1,0 +1,196 @@
+/* Spring: a bright sky over a meadow of flowers, blossom petals drifting down, butterflies
+   and songbirds, and now and then a passing shower followed by a rainbow. A flowering
+   vine grows over the logo box, with a bee buzzing about it.
+   Loaded by themes/themes.js after kit.css; the markup is added by spring.js. */
+
+body {
+    background-color: #a9d8ff;
+}
+
+.spring-sky {
+    background: linear-gradient(#5aa9f5, #a9d8ff 55%, #e3f4ff);
+}
+
+/* Greys over during a shower */
+.spring-sky::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(#7d8a99, #aab4bf 60%, #cdd4db);
+    opacity: 0;
+    transition: opacity 2.5s;
+}
+
+.spring-sky.shower::before {
+    opacity: 0.85;
+}
+
+.spring-sun {
+    position: absolute;
+    top: 5%;
+    left: 6%;
+    width: 120px;
+    height: 120px;
+}
+
+.spring-sun .rays {
+    transform-origin: 50px 50px;
+    animation: turn 40s linear infinite;
+}
+
+@keyframes turn {
+    to { transform: rotate(360deg); }
+}
+
+.rainbow {
+    position: absolute;
+    left: 12%;
+    right: 12%;
+    bottom: 22%;
+    width: 76%;
+    height: 50%;
+    opacity: 0;
+    transition: opacity 3s;
+}
+
+.spring-sky.rainbow-out .rainbow {
+    opacity: 0.55;
+}
+
+/* The meadow, with grass blades along its top edge */
+.meadow {
+    background: linear-gradient(#6abf4b, #4e9a36 120px, #3d7d2a);
+}
+
+.meadow::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -9px;
+    height: 10px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 10'%3E%3Cpath d='M0 10V8H40V10Z' fill='%236abf4b'/%3E%3Cpath d='M2 9L3 3L5 9M7 9L9 1L10 9M13 9L13 4L15 9M18 9L20 2L21 9M24 9L25 4L27 9M29 9L31 0L32 9M35 9L36 3L38 9' fill='%236abf4b'/%3E%3C/svg%3E") repeat-x;
+    background-size: 40px 10px;
+}
+
+.flower {
+    position: absolute;
+    bottom: calc(100% - 8px);
+    overflow: visible;
+    transform-origin: 50% 100%;
+    animation: grow 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) var(--grow) backwards,
+               sway var(--sway) ease-in-out calc(var(--grow) + 1.2s) infinite alternate;
+}
+
+@keyframes grow {
+    from { transform: scaleY(0); }
+}
+
+@keyframes sway {
+    from { transform: rotate(-4deg); }
+    to { transform: rotate(4deg); }
+}
+
+.container > h1 {
+    color: #ffffff;
+    text-shadow: 0 2px 6px rgba(20, 60, 120, 0.45);
+}
+
+/* Butterflies and songbirds */
+.butterfly {
+    width: 40px;
+    height: 30px;
+}
+
+.butterfly .wing-l,
+.butterfly .wing-r {
+    transform-origin: 20px 15px;
+    animation: flutter-wing 0.18s ease-in-out infinite alternate;
+}
+
+@keyframes flutter-wing {
+    to { transform: scaleX(0.25); }
+}
+
+.songbird {
+    width: 44px;
+    height: 26px;
+}
+
+.songbird .wing {
+    transform-origin: 20px 13px;
+    animation: song-flap 0.24s ease-in-out infinite alternate;
+}
+
+@keyframes song-flap {
+    to { transform: scaleY(-0.8); }
+}
+
+/* The vine over the logo box, drawn by spring.js */
+.vine {
+    position: absolute;
+    left: -20px;
+    top: -20px;
+    width: calc(100% + 40px);
+    height: calc(100% + 40px);
+    z-index: 3;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.vine .stem {
+    stroke-dasharray: var(--length);
+    stroke-dashoffset: var(--length);
+    animation: vine-grow 3s ease-out forwards;
+}
+
+@keyframes vine-grow {
+    to { stroke-dashoffset: 0; }
+}
+
+.vine .leaf,
+.vine .blossom {
+    animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) var(--at) backwards;
+}
+
+@keyframes pop {
+    from { scale: 0; }
+}
+
+/* The bee */
+.bee {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 26px;
+    height: 20px;
+    z-index: 6;
+    transform: translate(20px, -40px);
+}
+
+.bee svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.bee.left svg {
+    transform: scaleX(-1);
+}
+
+.bee .bee-wing {
+    transform-origin: 13px 9px;
+    animation: buzz 0.06s linear infinite alternate;
+}
+
+@keyframes buzz {
+    to { transform: scaleY(0.3); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .flower, .vine .stem, .vine .leaf, .vine .blossom, .spring-sun .rays,
+    .butterfly .wing-l, .butterfly .wing-r, .songbird .wing, .bee .bee-wing { animation: none; }
+    .vine .stem { stroke-dashoffset: 0; }
+    .spring-sky::before, .rainbow { transition: none; }
+}

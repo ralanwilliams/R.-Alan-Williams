@@ -1,0 +1,128 @@
+/* New Year: fireworks bursting over a city skyline at night, confetti falling, and a
+   "Happy New Year" bunting strung over the logo box between two poles, one wearing a
+   party hat that throws confetti when clicked.
+   Loaded by themes/themes.js after kit.css; the markup is added by new-year.js. */
+
+body {
+    background-color: #0d1333;
+}
+
+.new-year-sky {
+    background: linear-gradient(#03040d, #0d1333 50%, #1f2152);
+}
+
+/* The street in front of the skyline */
+.plaza {
+    background: linear-gradient(#22223a, #17172a 120px, #0e0e1c);
+}
+
+.skyline {
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+    width: 100%;
+    height: 170px;
+}
+
+.skyline .flicker {
+    animation: window-flicker 6s steps(1) infinite;
+}
+
+@keyframes window-flicker {
+    0%, 45% { opacity: 1; }
+    50%, 70% { opacity: 0.1; }
+    75% { opacity: 1; }
+}
+
+.skyline .beacon {
+    animation: beacon 1.6s ease-in-out infinite;
+}
+
+@keyframes beacon {
+    50% { opacity: 0.2; }
+}
+
+.container > h1 {
+    color: #f4f0ff;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+}
+
+/* Bunting between two gold poles on the corners of the logo box */
+.pole {
+    position: absolute;
+    bottom: 100%;
+    width: 4px;
+    height: 40px;
+    background: linear-gradient(90deg, #b8860b, #ffd700, #b8860b);
+    border-radius: 2px;
+    z-index: 3;
+}
+
+.pole.left { left: 0; }
+.pole.right { right: 0; }
+
+/* Its string runs between the tops of the poles */
+.bunting {
+    position: absolute;
+    left: 0;
+    top: -44px;
+    width: 100%;
+    height: 60px;
+    z-index: 4;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.bunting .flag {
+    animation: flutter 3s ease-in-out infinite alternate;
+}
+
+@keyframes flutter {
+    from { transform: rotate(-6deg); }
+    to { transform: rotate(6deg); }
+}
+
+.party-hat {
+    position: absolute;
+    right: -11px;
+    bottom: calc(100% + 34px);
+    width: 26px;
+    height: 34px;
+    padding: 0;
+    border: 0;
+    background: none;
+    z-index: 5;
+    cursor: pointer;
+    transform: rotate(18deg);
+    transform-origin: 50% 100%;
+}
+
+.party-hat svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.party-hat:focus-visible {
+    outline: 2px dashed #ffd23f;
+    outline-offset: 2px;
+}
+
+/* The countdown tag hanging under the box */
+.countdown {
+    position: absolute;
+    right: 10px;
+    top: calc(100% + 6px);
+    padding: 2px 10px;
+    border-radius: 10px;
+    background: #ffd23f;
+    color: #1b1b3a;
+    font-family: 'Oswald', 'Arial Narrow', sans-serif;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bunting .flag, .skyline .flicker, .skyline .beacon { animation: none; }
+}

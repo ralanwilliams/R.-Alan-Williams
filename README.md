@@ -66,6 +66,7 @@ Each significant decision is written up as an Architecture Decision Record (ADR)
 
 ```
 ├── public/              the website (ralanwilliams.com)
+├── public/themes/       seasonal themes for the landing page, each shown between its dates
 ├── functions/           Cloudflare Pages routes for /cv downloads
 ├── src/Cv.Public/       the /cv endpoint and the keep-alive: URLs, headers, caching, database query
 ├── workers/keep-alive/  Cloudflare Worker that queries the database daily so Supabase never pauses
@@ -78,6 +79,7 @@ Each significant decision is written up as an Architecture Decision Record (ADR)
 ├── docs/cv-database.md  database setup and migration guide
 ├── docs/cv-editor.md    editor setup, use and tests
 ├── docs/cv-public.md    public download setup (Hyperdrive, Pages, rate limit)
+├── docs/site-themes.md  seasonal themes: setting dates, previewing, adding one
 └── scripts/             helper scripts: .env loading, the ADR index, starting the editor at boot, its tray icon
 ```
 

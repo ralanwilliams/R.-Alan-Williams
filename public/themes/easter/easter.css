@@ -1,0 +1,404 @@
+/* Easter: an egg in a nest on the logo box and the mama hen who looks after it, over a
+   pastel morning with an egg hunt in the meadow, the Easter Bunny, chicks, egg balloons,
+   blossom petals and a garland of eggs under the sign.
+   Loaded by themes/themes.js after kit.css; the markup is added by easter.js. */
+
+/* An egg in a nest on the logo box. Picked up, the egg is held in viewport
+   coordinates; once it lands it stays put on the page. The nest stays behind.
+   The egg sits between the back and front of the nest. */
+.logo-box {
+    position: relative;
+}
+
+.nest {
+    position: absolute;
+    right: 10px;
+    bottom: calc(100% - 4px);
+    width: 64px;
+    height: 28px;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.nest.back { z-index: 9; }
+.nest.front { z-index: 12; }
+
+/* Mama hen hops along the top of the logo box. While sitting she goes
+   between the egg and the front of the nest. */
+.mama {
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+    width: 60px;
+    height: 54px;
+    z-index: 13;
+    pointer-events: none;
+}
+
+.mama.sitting { z-index: 11; }
+
+.mama .face {
+    width: 100%;
+    height: 100%;
+    transition: transform 0.12s;
+}
+
+.mama.left .face { transform: scaleX(-1); }
+
+.mama svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    transform-origin: 45% 100%;
+}
+
+.mama .fluffed { display: none; }
+.mama.sitting .fluffed { display: inline; }
+.mama.sitting .legs { display: none; }
+
+.egg {
+    --egg-w: 34px;
+    position: absolute;
+    right: 25px;
+    bottom: calc(100% + 2px);
+    width: var(--egg-w);
+    height: calc(var(--egg-w) * 1.27);
+    z-index: 10;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.egg.loose {
+    right: auto;
+    bottom: auto;
+}
+
+.egg.held {
+    cursor: grabbing;
+}
+
+.egg svg {
+    position: absolute;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.egg .whole {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform-origin: 50% 100%;
+}
+
+.egg.held .whole {
+    transform: rotate(-8deg);
+    filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.25));
+}
+
+.egg.squash .whole {
+    animation: egg-squash 0.18s ease-out;
+}
+
+@keyframes egg-squash {
+    40% { transform: scale(1.12, 0.88); }
+}
+
+/* Broken shell, wider than the egg and resting on the same floor */
+.egg .broken {
+    display: none;
+    left: 50%;
+    bottom: 0;
+    width: calc(var(--egg-w) * 3.2);
+    height: calc(var(--egg-w) * 1.554);
+    transform: translateX(-50%);
+}
+
+/* The chick climbs up out of the bottom half of the shell */
+.egg.cracked .chick {
+    animation: chick-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s backwards;
+}
+
+@keyframes chick-pop {
+    from { transform: translateY(26px); }
+}
+
+.egg-bubble {
+    --nudge: 0px;
+    position: absolute;
+    left: calc(50% + var(--egg-w) * 0.78 + var(--nudge));
+    bottom: calc(var(--egg-w) * 1.45);
+    transform: translateX(-24px);
+    padding: 4px 10px;
+    background: #ffffff;
+    border: 2px solid #333;
+    border-radius: 12px;
+    font-family: 'Oswald', 'Arial Narrow', sans-serif;
+    font-size: 0.95rem;
+    color: #333;
+    white-space: nowrap;
+    visibility: hidden;
+    cursor: default;
+}
+
+/* Tail stays over the chick's head however far the bubble is nudged */
+.egg-bubble::after {
+    content: '';
+    position: absolute;
+    left: calc(24px - var(--nudge) - 7px);
+    top: 100%;
+    border: 7px solid transparent;
+    border-top-color: #333;
+}
+
+.egg.cracked .egg-bubble {
+    visibility: visible;
+    animation: bubble-in 0.25s ease-out 0.7s backwards;
+}
+
+@keyframes bubble-in {
+    from { visibility: hidden; opacity: 0; transform: translateX(-24px) scale(0.6); }
+}
+
+.egg-bubble a {
+    color: #2b4a6f;
+    cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .egg.cracked .chick, .egg.cracked .egg-bubble { animation: none; }
+}
+
+.egg.cracked { cursor: default; }
+.egg.cracked .whole { display: none; }
+.egg.cracked .broken { display: block; }
+
+.egg.gone {
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+
+/* Pastel morning */
+body {
+    background-color: #e9dcff;
+}
+
+.easter-sky {
+    background: linear-gradient(#a9dcff, #d9d6ff 50%, #ffe1ee);
+}
+
+.easter-sun {
+    position: absolute;
+    top: 6%;
+    left: 8%;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(#fffbe0, #ffe98a 45%, rgba(255, 233, 138, 0.35) 60%, rgba(255, 233, 138, 0) 72%);
+}
+
+.container > h1 {
+    color: #ffffff;
+    text-shadow: 0 2px 6px rgba(120, 80, 160, 0.45);
+}
+
+/* The meadow, with tufts of grass along its top edge */
+.easter-meadow {
+    background: linear-gradient(#8fd16a, #6cb84a 120px, #4f9a36);
+}
+
+.easter-meadow::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -9px;
+    height: 10px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 10'%3E%3Cpath d='M0 10V8H40V10Z' fill='%238fd16a'/%3E%3Cpath d='M2 9L3 3L5 9M7 9L9 1L10 9M13 9L13 4L15 9M18 9L20 2L21 9M24 9L25 4L27 9M29 9L31 0L32 9M35 9L36 3L38 9' fill='%238fd16a'/%3E%3C/svg%3E") repeat-x;
+    background-size: 40px 10px;
+}
+
+.skyline-prop {
+    position: absolute;
+    bottom: calc(100% - 10px);
+    width: 90px;
+    display: none;
+    overflow: visible;
+}
+
+@media (min-width: 1000px) {
+    .skyline-prop { display: block; }
+}
+
+/* Eggs hidden in the grass */
+.hidden-egg {
+    position: absolute;
+    width: 34px;
+    height: 36px;
+    margin-left: -17px;
+    padding: 0;
+    border: 0;
+    background: none;
+    z-index: 5;
+    cursor: pointer;
+}
+
+.hidden-egg svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.hidden-egg:hover .shell,
+.hidden-egg:focus-visible .shell {
+    transform: translateY(-3px);
+}
+
+.hidden-egg .shell {
+    transition: transform 0.2s;
+}
+
+.hidden-egg.found .shell {
+    animation: found 1.4s ease-out forwards;
+}
+
+.hidden-egg.found .tuft {
+    animation: fade 1.4s forwards;
+}
+
+@keyframes found {
+    30% { transform: translateY(-34px) rotate(200deg); opacity: 1; }
+    100% { transform: translateY(-50px) rotate(360deg); opacity: 0; }
+}
+
+@keyframes fade {
+    to { opacity: 0; }
+}
+
+.hidden-egg:focus-visible {
+    outline: 2px dashed #9a7ff0;
+    outline-offset: 2px;
+}
+
+/* The egg garland under the sign, and the hunt's score below it */
+.egg-garland {
+    position: absolute;
+    left: 0;
+    top: 100%;
+    width: 100%;
+    height: 34px;
+    z-index: 3;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.garland-egg {
+    animation: dangle 2.6s ease-in-out infinite alternate;
+}
+
+@keyframes dangle {
+    from { transform: rotate(-7deg); }
+    to { transform: rotate(7deg); }
+}
+
+.hunt-score {
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 46px);
+    translate: -50% 0;
+    padding: 2px 12px;
+    border-radius: 10px;
+    background: #9a7ff0;
+    color: #ffffff;
+    font-family: 'Oswald', 'Arial Narrow', sans-serif;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+/* The Easter Bunny */
+.bunny {
+    position: absolute;
+    left: 0;
+    width: 88px;
+    height: 80px;
+    padding: 0;
+    border: 0;
+    background: none;
+    z-index: 6;
+    cursor: pointer;
+    transform: translate(-100px, 0);
+}
+
+.bunny svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    transition: transform 0.1s;
+}
+
+.bunny.left svg {
+    transform: scaleX(-1);
+}
+
+.bunny.hopping .ears {
+    transform-origin: 48px 24px;
+    animation: ears 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes ears {
+    to { transform: rotate(-8deg); }
+}
+
+.bunny:focus-visible {
+    outline: 2px dashed #9a7ff0;
+    outline-offset: 2px;
+}
+
+/* Chicks in the meadow */
+.meadow-chick {
+    position: absolute;
+    width: 26px;
+    height: 24px;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.meadow-chick svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.meadow-chick.left svg {
+    transform: scaleX(-1);
+}
+
+/* Egg balloons, starting just below the window */
+.egg-balloon {
+    position: fixed;
+    top: 100%;
+    width: 40px;
+    height: 110px;
+    padding: 0;
+    border: 0;
+    background: none;
+    z-index: 21;
+    cursor: pointer;
+}
+
+.egg-balloon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .garland-egg, .bunny.hopping .ears { animation: none; }
+    .hidden-egg.found .shell, .hidden-egg.found .tuft { animation: fade 0.6s forwards; }
+}

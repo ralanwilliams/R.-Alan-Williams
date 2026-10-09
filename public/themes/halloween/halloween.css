@@ -1,0 +1,232 @@
+/* Halloween: a stormy sky with rain and lightning over muddy ground, swarms of bats and
+   witches on broomsticks, a jack-o'-lantern on the logo box with a ghost inside, and a
+   cobweb in its corner with a spider letting itself down from it.
+   Loaded by themes/themes.js after kit.css; the markup is added by halloween.js. */
+
+/* Stormy sky, behind the whole page */
+body {
+    background-color: #3b3f46;
+}
+
+.storm-sky {
+    background: linear-gradient(#24272c, #33363c 45%, #464a51);
+}
+
+/* Muddy ground the holes are dug into. Its top edge is lumps of earth with tufts of grass. */
+.mud {
+    background: linear-gradient(#574d42, #3e362e 120px, #2e2822);
+}
+
+.mud::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -9px;
+    height: 10px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 10'%3E%3Cpath d='M0 10V7C6 5 10 7 16 6S26 4 32 6 44 7 50 5 56 6 60 7V10Z' fill='%23574d42'/%3E%3Cpath d='M8 7L9 2L10 7M11 7L13 3L13 7M30 6L31 1L32 6M34 6L36 2L35 6M48 6L49 3L50 6' stroke='%234a5a32' fill='none'/%3E%3C/svg%3E") repeat-x;
+    background-size: 60px 10px;
+}
+
+/* Gravestones on the skyline, where there is room beside the holes */
+.tombstone {
+    position: absolute;
+    bottom: calc(100% - 8px);
+    width: 30px;
+    height: auto;
+    display: none;
+}
+
+@media (min-width: 1000px) {
+    .tombstone { display: block; }
+}
+
+/* The title sits on the darkest part of the sky */
+.container > h1 {
+    color: #f2f2f2;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+/* Cobweb strung across the top-left corner of the box */
+.cobweb {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 64px;
+    height: 64px;
+    z-index: 1;
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+/* Jack-o'-lantern on top of the box. Clicking it lets a ghost out. */
+.pumpkin {
+    position: absolute;
+    right: 14px;
+    bottom: calc(100% - 3px);
+    width: 58px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    background: none;
+    z-index: 12;
+    cursor: pointer;
+    animation: lantern 3.1s infinite;
+}
+
+.pumpkin svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.pumpkin:focus-visible {
+    outline: 2px dashed #e8761c;
+    outline-offset: 4px;
+}
+
+.pumpkin .glow {
+    animation: candle 3.1s infinite;
+}
+
+.pumpkin:active svg {
+    transform: scale(1.06, 0.94);
+    transform-origin: 50% 100%;
+}
+
+/* An uneven candle: mostly steady, with the odd gutter */
+@keyframes candle {
+    0%, 100% { fill: #ffd23f; }
+    8%  { fill: #ffb627; }
+    11% { fill: #ffe066; }
+    40% { fill: #ffd23f; }
+    43% { fill: #f59e1b; }
+    46% { fill: #ffd23f; }
+    71% { fill: #ffe066; }
+    74% { fill: #ffb627; }
+}
+
+@keyframes lantern {
+    0%, 100% { filter: drop-shadow(0 0 6px rgba(255, 170, 40, 0.65)); }
+    8%  { filter: drop-shadow(0 0 3px rgba(255, 150, 30, 0.45)); }
+    11% { filter: drop-shadow(0 0 9px rgba(255, 190, 60, 0.8)); }
+    43% { filter: drop-shadow(0 0 2px rgba(255, 140, 20, 0.35)); }
+    46% { filter: drop-shadow(0 0 6px rgba(255, 170, 40, 0.65)); }
+}
+
+/* The ghost starts hidden behind the pumpkin, then floats up out of it */
+.ghost {
+    position: absolute;
+    right: 23px;
+    bottom: calc(100% + 4px);
+    width: 40px;
+    height: 46px;
+    z-index: 11;
+    pointer-events: none;
+}
+
+.ghost svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* The spider hangs on its silk from a point on the cobweb, both placed there by
+   halloween.js. The silk grows with the same timing as the spider moves, so the
+   two stay joined. */
+.silk {
+    position: absolute;
+    width: 1px;
+    height: 0;
+    margin-left: -0.5px;
+    background: rgba(255, 255, 255, 0.75);
+    z-index: 2;
+    pointer-events: none;
+    transition: height 2s ease-in-out;
+}
+
+.spider {
+    position: absolute;
+    width: 30px;
+    height: 24px;
+    z-index: 3;
+    cursor: pointer;
+    transform: translateY(0);
+    transition: transform 2s ease-in-out;
+}
+
+.spider svg {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.spider.scurry .legs {
+    animation: scurry 0.12s linear infinite alternate;
+    transform-origin: 15px 14px;
+}
+
+@keyframes scurry {
+    to { transform: scaleX(0.82); }
+}
+
+.bat {
+    width: 60px;
+    height: 30px;
+}
+
+.witch {
+    width: 128px;
+    height: 76px;
+}
+
+.witch .cape {
+    transform-origin: 52px 22px;
+    animation: billow 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes billow {
+    to { transform: scale(1.08, 0.85); }
+}
+
+/* Lightning, over everything */
+.lightning-flash {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: #eef3ff;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.lightning-bolt {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 51;
+    opacity: 0;
+    pointer-events: none;
+    fill: none;
+    stroke: #ffffff;
+    stroke-width: 2.5;
+    stroke-linejoin: bevel;
+    filter: drop-shadow(0 0 4px #b9ccff) drop-shadow(0 0 12px #8fb0ff);
+}
+
+.bat .wing {
+    transform-origin: 30px 13px;
+    animation: flap 0.22s ease-in-out infinite alternate;
+}
+
+@keyframes flap {
+    to { transform: scaleY(-0.55); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pumpkin, .pumpkin .glow, .spider.scurry .legs { animation: none; }
+    .spider, .silk { transition: none; }
+}
