@@ -12,7 +12,12 @@ namespace Cv.Core.Rendering;
 /// Link the stylesheet from this URL instead of inlining it. The editor does this so its
 /// Content Security Policy can forbid inline styles.
 /// </param>
-public sealed record RenderOptions(bool Preview = false, string? StylesheetHref = null);
+/// <param name="DisplayOptions">
+/// The public HTML page: checkboxes above the CV for a readable layout and dark colours. The
+/// page runs no scripts, so the stylesheet reads them with <c>:has()</c>. Off for the editor
+/// preview and the PDF's input.
+/// </param>
+public sealed record RenderOptions(bool Preview = false, string? StylesheetHref = null, bool DisplayOptions = false);
 
 /// <summary>
 /// Renders one locale of a CV as a standalone HTML document: the editor's live preview, and
@@ -22,7 +27,7 @@ public sealed record RenderOptions(bool Preview = false, string? StylesheetHref 
 public static class HtmlRenderer
 {
     /// <summary>Recorded with stored renders (<c>cv_renders.renderer_version</c>). Bump whenever the output changes.</summary>
-    public const string RendererVersion = "html/3";
+    public const string RendererVersion = "html/4";
 
     private static readonly Lazy<string> Stylesheet = new(() =>
     {
@@ -55,7 +60,12 @@ public static class HtmlRenderer
         {
             html.Append("<style>\n").Append(Css).Append("</style>\n");
         }
-        html.Append("</head>\n<body>\n<main class=\"cv").Append(options.Preview ? " cv-preview" : "").Append("\">\n");
+        html.Append("</head>\n<body>\n");
+        if (options.DisplayOptions)
+        {
+            AppendDisplayOptions(html, context.Messages);
+        }
+        html.Append("<main class=\"cv").Append(options.Preview ? " cv-preview" : "").Append("\">\n");
 
         if (context.Tree.Root is { } root)
         {
@@ -64,6 +74,19 @@ public static class HtmlRenderer
 
         html.Append("</main>\n</body>\n</html>\n");
         return html.ToString();
+    }
+
+    /// <summary>
+    /// Readable layout and dark colours (WCAG 1.4.8), as checkboxes the stylesheet reads with
+    /// <c>:has()</c>. Not printed, and not remembered between visits.
+    /// </summary>
+    private static void AppendDisplayOptions(StringBuilder html, Messages messages)
+    {
+        html.Append("<div class=\"cv-display\" role=\"group\" aria-labelledby=\"cv-display-title\">\n");
+        html.Append("<p class=\"cv-display-title\" id=\"cv-display-title\">").Append(Encode(messages.DisplayOptions)).Append("</p>\n");
+        html.Append("<label><input type=\"checkbox\" id=\"cv-readable\"> ").Append(Encode(messages.ReadableLayout)).Append("</label>\n");
+        html.Append("<label><input type=\"checkbox\" id=\"cv-dark\"> ").Append(Encode(messages.DarkColours)).Append("</label>\n");
+        html.Append("</div>\n");
     }
 
     private sealed class RenderContext(LocalizedDocument document, RenderOptions options, Messages messages)

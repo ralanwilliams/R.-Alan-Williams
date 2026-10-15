@@ -140,6 +140,6 @@
     background-size: 40px 14px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .kit-cloud, .kit-stars .twinkle { animation: none; }
-}
+/* Reduced motion: the OS setting or the site's own (a11y.js) */
+:root[data-motion="reduce"] .kit-cloud,
+:root[data-motion="reduce"] .kit-stars .twinkle { animation: none; }

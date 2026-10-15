@@ -69,6 +69,8 @@ function stylesheet(href) {
 // The shared kit's styles, then the theme's, then its script as a module (so it can
 // import ../kit.js). The script runs once the styles are in, so nothing appears unstyled.
 function load(theme) {
+    // Lets the page make room for what the theme puts above the sign
+    document.documentElement.dataset.season = theme.name;
     const base = new URL(`${theme.name}/${theme.name}`, import.meta.url);
     Promise.all([stylesheet(new URL('kit.css', import.meta.url)), stylesheet(base + '.css')]).then(() => {
         const js = document.createElement('script');
@@ -101,7 +103,9 @@ export function forVisit(search, date) {
     return { theme: pickTheme(THEMES, date, asked) };
 }
 
-if (typeof document !== 'undefined') {
+// Seasonal decorations can be turned off in the accessibility settings (a11y.js), which
+// beats both the date and ?theme=.
+if (typeof document !== 'undefined' && document.documentElement.dataset.decor !== 'off') {
     const visit = forVisit(location.search, new Date());
     if (visit.rotate) {
         const { theme, index, left } = rotation(THEMES, Date.now());

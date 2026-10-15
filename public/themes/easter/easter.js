@@ -316,7 +316,7 @@ import {
         }
     }
 
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (calm) {
         // No hopping: she just sits on the egg
         mamaX = nestX();
         mamaY = SIT_DROP;
@@ -468,11 +468,18 @@ const showHunt = () => {
 
 function hideEgg(xPercent = null) {
     const site = document.querySelector('.dig-site')?.getBoundingClientRect();
-    let x = xPercent, depth = rand(22, 120);
+    // No deeper than the meadow goes: on a short screen (a phone on its side) an egg
+    // further down would make the page scroll
+    const bottom = Math.max(innerHeight, document.querySelector('.container').getBoundingClientRect().bottom + scrollY);
+    const deepest = Math.max(22, Math.min(120, bottom - meadow.top - 40));
+    const pickDepth = () => rand(22, deepest);
+    let x = xPercent, depth = pickDepth();
     for (let tries = 0; x === null && tries < 20; tries++) {
         const guess = rand(3, 95), px = guess / 100 * innerWidth;
-        if (!site || depth > 110 || px < site.left - 30 || px > site.right + 30) x = guess;
-        else depth = rand(22, 120);
+        // Under the dig site only when deep enough to clear the holes' labels, which a
+        // short meadow isn't
+        if (!site || (depth > 110 && deepest >= 120) || px < site.left - 30 || px > site.right + 30) x = guess;
+        else depth = pickDepth();
     }
     if (x === null) x = rand(3, 95);
     const egg = make(`

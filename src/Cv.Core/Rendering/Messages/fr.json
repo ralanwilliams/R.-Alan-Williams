@@ -17,5 +17,8 @@
   "dateRange": "{start} – {end}",
   "documentTitle": "{name} – CV",
   "missing": "Texte manquant",
-  "label": "{label} :"
+  "label": "{label} :",
+  "displayOptions": "Options d’affichage",
+  "readableLayout": "Mise en page lisible",
+  "darkColours": "Couleurs sombres"
 }

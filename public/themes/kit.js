@@ -6,7 +6,9 @@
 // A theme script imports what it needs:
 //   import { rand, sky, ground, weather } from '../kit.js';
 
-export const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Reduced motion: from the OS setting or the site's own, which a11y.js puts on <html>
+// before anything else runs. Changing the site setting reloads the page.
+export const calm = document.documentElement.dataset.motion === 'reduce';
 export const rand = (min, max) => min + Math.random() * (max - min);
 export const pick = list => list[Math.floor(Math.random() * list.length)];
 export const chance = p => Math.random() < p;

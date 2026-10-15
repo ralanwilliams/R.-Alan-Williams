@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alan Williams - Under Construction</title>
+    <title>Alan Williams</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400&display=swap" rel="stylesheet">
+    <!-- Accessibility settings: first, so every style and script below sees them -->
+    <script src="a11y.js"></script>
+    <link rel="stylesheet" href="a11y.css">
     <style>
         * {
             margin: 0;
@@ -14,14 +17,26 @@
             box-sizing: border-box;
         }
 
+        /* Set on html too, or body's overflow would pass to the window and body itself
+           would clip nothing */
+        html {
+            overflow-x: clip;
+        }
+
         body {
+            /* The containing block for what themes place on the page, so its clip below
+               keeps things they move in from beyond the edges (the Easter Bunny) from
+               making the page scroll sideways */
+            position: relative;
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            min-height: 100dvh;
+            /* Room at the top for the accessibility button */
+            padding: 72px 20px 20px;
             overflow-x: clip;
         }
 
@@ -29,14 +44,6 @@
             text-align: center;
             width: 100%;
             max-width: 700px;
-        }
-
-        h1 {
-            font-size: 3.5rem;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 60px;
-            letter-spacing: 2px;
         }
 
         /* An old shop sign: a wooden board with a bevelled edge, a groove routed round
@@ -73,21 +80,22 @@
 
         /* Carved letters: dark in the cut, shadowed along the top edge and catching
            the light along the bottom */
-        .logo-box h2 {
+        .logo-box h1 {
             font-family: 'Anton', Impact, 'Arial Narrow', sans-serif;
             font-weight: 400;
             color: #3a200c;
-            font-size: 4.5rem;
+            font-size: clamp(2.4rem, 12vw, 4.5rem);
             line-height: 0.95;
             letter-spacing: 1px;
             text-shadow: -1px -1px 1px rgba(20, 8, 0, 0.6), 1px 1.5px 0 rgba(255, 220, 170, 0.45);
         }
 
-        .logo-box h2 > span {
+        .logo-box .sign,
+        .logo-box .sign > span {
             display: block;
         }
 
-        .logo-box h2 .line-2 {
+        .logo-box .sign .line-2 {
             display: flex;
             align-items: baseline;
         }
@@ -170,9 +178,9 @@
             50% { transform: translateY(-7px); }
         }
 
-        @media (prefers-reduced-motion: reduce) {
-            .digger .chisel, .digger .tool.dig { animation: none; }
-        }
+        /* Reduced motion: the OS setting or the site's own (a11y.js) */
+        :root[data-motion="reduce"] .digger .chisel,
+        :root[data-motion="reduce"] .digger .tool.dig { animation: none; }
 
         .holes {
             position: absolute;
@@ -298,15 +306,31 @@
 
         @media (hover: hover) {
             .hole a:hover svg.body { z-index: 3; }
-            .hole a:hover .label { opacity: 1; z-index: 5; }
+            .hole a:hover .label { opacity: 1; z-index: 5; pointer-events: auto; }
             .hole a:hover .peek {
                 transform: translateY(0);
                 transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             }
         }
 
-        @media (prefers-reduced-motion: reduce) {
-            .peek, .hole a:hover .peek, .hole a:focus-visible .peek, .hole.revealed .peek { transition: none; }
+        :root[data-motion="reduce"] :is(.peek, .hole a:hover .peek, .hole a:focus-visible .peek, .hole.revealed .peek, .hole .label) {
+            transition: none;
+        }
+
+        /* The label stays up while the pointer moves onto it, and Escape puts a raised
+           project back down until the pointer or focus leaves it */
+        .hole a:focus-visible .label,
+        .hole.revealed .label {
+            pointer-events: auto;
+        }
+
+        .hole.quiet .label {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        .hole.quiet .peek {
+            transform: translateY(var(--rest)) !important;
         }
 
         /* Chips flying off the bit */
@@ -333,14 +357,206 @@
             100% { opacity: 0; transform: translate(var(--cx, 18px), var(--cy, -24px)) rotate(200deg); }
         }
 
-        @media (prefers-reduced-motion: reduce) {
-            .chip { display: none; }
+        :root[data-motion="reduce"] .chip { display: none; }
+
+        /* Plain list of every project (the "List of projects" setting), and the button
+           that offers it when narrow screens leave older holes out */
+        .project-list {
+            display: none;
+            margin: 0 auto;
+            max-width: 32rem;
+            padding: 10px 0 4px;
+            text-align: left;
+            font-family: 'Oswald', 'Arial Narrow', sans-serif;
+            color: #222;
+            /* Its own background, so it reads over any theme's scenery */
+            background: rgba(245, 245, 245, 0.94);
+            border-radius: 8px;
+        }
+
+        :root[data-list="on"] .project-list {
+            display: block;
+        }
+
+        .project-list h2 {
+            font-family: 'Anton', Impact, 'Arial Narrow', sans-serif;
+            font-weight: 400;
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+            margin: 0 12px 4px;
+        }
+
+        .project-list ul {
+            list-style: none;
+            border-top: 1px solid #c4c4c4;
+        }
+
+        .project-list li + li {
+            border-top: 1px solid #c4c4c4;
+        }
+
+        .project-list a {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0 12px;
+            min-height: 48px;
+            padding: 6px 12px;
+            font-size: 1.15rem;
+            color: #1a3a63;
+        }
+
+        .project-list a small {
+            font-size: 1rem;
+            color: #333;
+        }
+
+        .more-projects {
+            display: block;
+            margin: 0 auto;
+            min-height: 44px;
+            padding: 0 16px;
+            font: 1rem 'Oswald', 'Arial Narrow', sans-serif;
+            color: #222;
+            background: rgba(245, 245, 245, 0.92);
+            border: 2px solid #555;
+            border-radius: 22px;
+            cursor: pointer;
+        }
+
+        .more-projects[hidden],
+        :root[data-list="on"] .more-projects {
+            display: none;
+        }
+
+        /* High contrast (a11y.js): the sign in solid dark wood with light lettering, holes
+           outlined in black, labels black on white */
+        :root[data-contrast="high"] body {
+            background: #fff;
+        }
+
+        :root[data-contrast="high"] .logo-box {
+            background: #2a1405;
+            box-shadow: 0 0 0 4px #000;
+        }
+
+        :root[data-contrast="high"] .logo-box::after {
+            box-shadow: inset 0 0 0 1px #8a6a4a;
+        }
+
+        :root[data-contrast="high"] .logo-box h1 {
+            color: #fff;
+            text-shadow: none;
+        }
+
+        :root[data-contrast="high"] .logo-box .dev {
+            color: #ffd166;
+            text-shadow: none;
+        }
+
+        :root[data-contrast="high"] .logo-box p {
+            color: #fff;
+            text-shadow: none;
+        }
+
+        /* Black with a white halo, to show on light and dark theme ground alike */
+        :root[data-contrast="high"] .hole .hit {
+            stroke: #000;
+            stroke-width: 2;
+            filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff);
+        }
+
+        :root[data-contrast="high"] .hole a:focus-visible .hit {
+            stroke: #000;
+            stroke-width: 5;
+            paint-order: stroke;
+        }
+
+        :root[data-contrast="high"] .hole .label {
+            color: #000;
+            background: #fff;
+            border: 2px solid #000;
+        }
+
+        :root[data-contrast="high"] .hole .label small {
+            color: #000;
+        }
+
+        :root[data-contrast="high"] .project-list {
+            color: #000;
+            background: #fff;
+            border: 2px solid #000;
+        }
+
+        :root[data-contrast="high"] .project-list ul,
+        :root[data-contrast="high"] .project-list li + li {
+            border-top-color: #000;
+        }
+
+        :root[data-contrast="high"] .project-list a {
+            color: #00008b;
+            text-decoration-thickness: 2px;
+        }
+
+        :root[data-contrast="high"] .project-list a small {
+            color: #000;
+        }
+
+        :root[data-contrast="high"] .more-projects {
+            color: #000;
+            background: #fff;
+            border-color: #000;
+        }
+
+        /* Forced colours (Windows High Contrast): outline the holes so they can be found */
+        @media (forced-colors: active) {
+            .hole .hit {
+                stroke: CanvasText;
+                stroke-width: 2;
+            }
+
+            .hole a:focus-visible .hit {
+                stroke: Highlight;
+                stroke-width: 4;
+            }
+
+            .hole .label {
+                border: 1px solid CanvasText;
+            }
+        }
+
+        /* Large screens: everything a little bigger */
+        @media (min-width: 1400px) and (min-height: 900px) {
+            .container {
+                max-width: 820px;
+            }
+
+            .logo-box h1 {
+                font-size: 5.2rem;
+            }
+
+            .logo-box p {
+                font-size: 1.15rem;
+            }
+
+            .dig-site {
+                --jh-w: 250px;
+                --s: 1.14;
+            }
         }
 
         @media (max-width: 600px) {
-            h1 {
-                font-size: 2.2rem;
-                margin-bottom: 40px;
+            body {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+            /* The sign fills the width here, so whatever a theme puts on top of it (a
+               sign, a hen's nest, a walking turkey) needs room below the accessibility
+               button, or it would be covered */
+            :root[data-season] body {
+                padding-top: 136px;
             }
 
             .logo-box {
@@ -352,8 +568,8 @@
                 inset: 7px;
             }
 
-            .logo-box h2 {
-                font-size: 3rem;
+            .logo-box h1 {
+                font-size: clamp(2.4rem, 11vw, 3rem);
             }
 
             .logo-box p {
@@ -367,13 +583,73 @@
                 margin: 40px 0;
             }
         }
+
+        /* Small phones, and 320px-wide layouts such as a page zoomed to 400% */
+        @media (max-width: 360px) {
+            body {
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+
+            .logo-box {
+                padding: 16px 18px 14px;
+                margin-bottom: 36px;
+            }
+
+            .dig-site {
+                --jh-w: 140px;
+                --s: 0.66;
+            }
+        }
+
+        /* Phones on their side: the whole dig site, holes and cracks included, fits the
+           screen without scrolling. The sign is sized by the screen's height, and the
+           digger stands in front of its lower part (the sign makes no stacking context,
+           so his z-index puts him over it). The sign sits centred, clear of the
+           accessibility button in the corner, so the top needs little room. */
+        @media (max-height: 500px) and (orientation: landscape) {
+            body {
+                padding: 10px 20px 8px;
+            }
+
+            /* Room for what a theme puts above the sign (a sign, a hen's nest) */
+            :root[data-season] body {
+                padding-top: 48px;
+            }
+
+            .logo-box {
+                padding: 14px 22px 12px;
+                margin-bottom: 0;
+            }
+
+            .logo-box::after {
+                inset: 7px;
+            }
+
+            .logo-box h1 {
+                font-size: clamp(1.8rem, 10.5vh, 2.8rem);
+            }
+
+            .logo-box p {
+                font-size: 0.68rem;
+                margin-top: 5px;
+            }
+
+            .dig-site {
+                --jh-w: 140px;
+                --s: 0.64;
+                margin: calc(var(--jh-h) * -0.4) 0 0;
+                padding-bottom: 28px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="logo-box">
-            <h2><span>ROBERT ALAN</span><span class="line-2">WILLIAMS<span class="tag">&#8203;<span class="dev">DEV</span></span></span></h2>
-            <p aria-label="Full Stack Developer"><span>F</span><span>U</span><span>L</span><span>L</span><span></span><span>S</span><span>T</span><span>A</span><span>C</span><span>K</span><span></span><span>D</span><span>E</span><span>V</span><span>E</span><span>L</span><span>O</span><span>P</span><span>E</span><span>R</span></p>
+            <!-- Screen readers get the words; the carved letters are hidden from them -->
+            <h1><span class="visually-hidden">Robert Alan Williams, Full Stack Developer</span><span class="sign" aria-hidden="true"><span>ROBERT ALAN</span><span class="line-2">WILLIAMS<span class="tag">&#8203;<span class="dev">DEV</span></span></span></span></h1>
+            <p aria-hidden="true"><span>F</span><span>U</span><span>L</span><span>L</span><span></span><span>S</span><span>T</span><span>A</span><span>C</span><span>K</span><span></span><span>D</span><span>E</span><span>V</span><span>E</span><span>L</span><span>O</span><span>P</span><span>E</span><span>R</span></p>
         </div>
 
         <div class="dig-site">
@@ -419,6 +695,12 @@
             </svg>
             <ol class="holes" aria-label="Projects, oldest first"></ol>
         </div>
+
+        <button class="more-projects" type="button" hidden></button>
+        <section class="project-list" aria-labelledby="project-list-title">
+            <h2 id="project-list-title">Projects</h2>
+            <ul></ul>
+        </section>
     </div>
 
     <script>
@@ -646,6 +928,8 @@
         }
 
         const list = document.querySelector('.holes');
+        const plainList = document.querySelector('.project-list ul');
+        const settings = window.siteSettings ?? { get: () => undefined, set: () => {} };
         const finishedProjects = projects.filter(p => p.shipped).sort((a, b) => a.shipped.localeCompare(b.shipped));
         const sorted = finishedProjects.concat(projects.filter(p => !p.shipped).slice(0, 1));
         const shippedOn = p => new Date(p.shipped + '-01T00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
@@ -660,7 +944,7 @@
             a.target = '_blank';
             a.rel = 'noopener';
             const pct = Math.round(Math.min(100, Math.max(0, Number(project.percentComplete) || 0)));
-            a.setAttribute('aria-label', current ? `${project.name}, current project, ${pct}% complete` : `${project.name}, shipped ${shippedOn(project)}`);
+            a.dataset.label = current ? `${project.name}, current project, ${pct}% complete` : `${project.name}, shipped ${shippedOn(project)}`;
             a.style.setProperty('--w', halfW * 2 + 'px');
             a.style.setProperty('--h', halfH * 2 + 'px');
             a.style.setProperty('--shift', fmt(CENTER_SHIFT) + 'px');
@@ -685,6 +969,18 @@
                 }
             }
             list.appendChild(li);
+
+            // The same project in the plain list, newest first
+            const item = document.createElement('li');
+            const link = document.createElement('a');
+            link.href = a.href;
+            link.dataset.label = a.dataset.label;
+            link.textContent = project.name;
+            const when = document.createElement('small');
+            when.textContent = current ? `Now digging, ${pct}% complete` : `Shipped ${shippedOn(project)}`;
+            link.appendChild(when);
+            item.appendChild(link);
+            plainList.prepend(item);
         });
 
         // Show as many of the most recent finished holes as fit without going below
@@ -700,7 +996,16 @@
             finished.forEach((li, i) => { li.hidden = i < finished.length - shown; });
             const fs = shown ? Math.min(1, room / (shown * slot)) : 1;
             site.style.setProperty('--fs', fs.toFixed(3));
+            // Nothing is lost on a narrow screen: the left-out holes are in the plain list
+            const left = finished.length - shown;
+            more.hidden = !left;
+            more.textContent = `Show all ${sorted.length} projects`;
         }
+        const more = document.querySelector('.more-projects');
+        more.addEventListener('click', () => {
+            settings.set('list', 'on');
+            plainList.querySelector('a')?.focus();
+        });
         fitHoles();
         new ResizeObserver(fitHoles).observe(list);
 
@@ -718,6 +1023,37 @@
             e.preventDefault();
             hole.classList.add('revealed');
         });
+
+        // Escape puts a raised project and its label back down, until the pointer or
+        // focus moves away from it
+        document.addEventListener('keydown', e => {
+            if (e.key !== 'Escape') return;
+            for (const hole of list.querySelectorAll('.hole:not(.current)')) {
+                if (hole.matches(':hover, :focus-within, .revealed')) {
+                    hole.classList.remove('revealed');
+                    hole.classList.add('quiet');
+                }
+            }
+        });
+        list.addEventListener('pointerout', e => {
+            const hole = e.target.closest('.hole');
+            if (hole && !hole.contains(e.relatedTarget)) hole.classList.remove('quiet');
+        });
+        list.addEventListener('focusout', e => e.target.closest('.hole')?.classList.remove('quiet'));
+
+        // Project links open in a new tab unless the visitor turned that off (a11y.js);
+        // when they do, their names say so
+        function linkTargets() {
+            const newTab = settings.get('newtab') !== 'off';
+            for (const link of document.querySelectorAll('.hole a, .project-list a')) {
+                link.toggleAttribute('target', newTab);
+                if (newTab) link.target = '_blank';
+                link.rel = newTab ? 'noopener' : '';
+                link.setAttribute('aria-label', link.dataset.label + (newTab ? ' (opens in a new tab)' : ''));
+            }
+        }
+        linkTargets();
+        document.addEventListener('site-settings', linkTargets);
     </script>
     <script type="module" src="themes/themes.js"></script>
 </body>

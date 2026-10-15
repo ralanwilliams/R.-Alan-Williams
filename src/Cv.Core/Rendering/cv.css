@@ -1,5 +1,5 @@
 /*
- * CV stylesheet: shared by the editor preview and PDF output.
+ * CV stylesheet: shared by the editor preview, the public HTML page and PDF output.
  * Mirrors the original Word CV: Calibri 11 pt, 1.15 line spacing, centred header,
  * bold uppercase section headings, "Organisation | Location" over "Title | dates".
  * Page: A4 with the original's margins (1 in top and bottom, 1.25 in sides).
@@ -13,13 +13,14 @@
 
 :root {
   --ink: #000;
+  --paper: #fff;
   --muted: #444;
   --font: Calibri, Carlito, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
 
-html { color: var(--ink); background: #fff; }
+html { color: var(--ink); background: var(--paper); }
 
 body {
   margin: 0;
@@ -116,3 +117,143 @@ h1, h2, h3, p, ul { margin: 0; font-size: inherit; }
 .cv-preview [data-stale="true"] { text-decoration: underline dotted #b7791f; text-underline-offset: 2px; }
 .cv-preview [data-node-id] { cursor: pointer; }
 .cv-preview [data-node-id].is-focused { outline: 2px solid #8fb3dc; outline-offset: 2px; border-radius: 2px; }
+
+/* ---------------------------------------------------------------------------------------
+ * Display options (public HTML only; never printed or in the PDF)
+ * ------------------------------------------------------------------------------------ */
+
+/* A long address or URL may break rather than run off a narrow or zoomed-in screen */
+@media screen {
+  .cv-contacts li { overflow-wrap: anywhere; }
+}
+
+@media screen and (max-width: 600px) {
+  .cv-contacts li { white-space: normal; }
+}
+
+.cv-display {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 20px;
+  max-width: 146.5mm;
+  margin: 0 auto;
+  padding: 8px 16px;
+  border-bottom: 1px solid #767676;
+  font: 1rem/1.4 var(--font);
+}
+
+.cv-display-title {
+  align-self: center;
+  margin: 0;
+  font-weight: bold;
+}
+
+.cv-display label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.cv-display input {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: #1d4ed8;
+}
+
+.cv-display input:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+@media print {
+  .cv-display { display: none; }
+}
+
+/* Readable layout (WCAG 1.4.8): larger text, 1.5 line spacing, more space between
+   paragraphs, lines of at most about 70 characters, everything left-aligned and no
+   hyphenation, and links underlined */
+@media screen {
+  :root:has(#cv-readable:checked) body {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    hyphens: manual;
+  }
+
+  :root:has(#cv-readable:checked) .cv {
+    max-width: 70ch;
+  }
+
+  :root:has(#cv-readable:checked) .cv-header {
+    text-align: left;
+    margin-bottom: 1.5em;
+  }
+
+  :root:has(#cv-readable:checked) .cv-name {
+    font-size: 1.6em;
+  }
+
+  :root:has(#cv-readable:checked) .cv-contacts {
+    font-size: 1em;
+  }
+
+  :root:has(#cv-readable:checked) .cv-contacts li {
+    display: block;
+    white-space: normal;
+  }
+
+  :root:has(#cv-readable:checked) .cv-contacts li::after {
+    content: none;
+  }
+
+  :root:has(#cv-readable:checked) .cv-contacts a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  :root:has(#cv-readable:checked) .cv-section-title {
+    margin: 1.5em 0 0.5em;
+    font-size: 1.2em;
+    text-transform: none;
+  }
+
+  :root:has(#cv-readable:checked) .cv-subtitle {
+    text-transform: none;
+  }
+
+  :root:has(#cv-readable:checked) .cv-entry {
+    margin-bottom: 1.5em;
+  }
+
+  :root:has(#cv-readable:checked) :is(.cv-entry-what, .cv-paragraph, .cv-bullets li, .cv-skill-group, .cv-skills) {
+    margin-bottom: 0.9em;
+  }
+
+  :root:has(#cv-readable:checked) .cv-bullets {
+    padding-left: 1.5em;
+  }
+
+  /* Dark colours: light text on a dark page, for glare and light sensitivity */
+  :root:has(#cv-dark:checked) {
+    --ink: #f2f2f2;
+    --paper: #121212;
+    --muted: #c8c8c8;
+    color-scheme: dark;
+  }
+
+  :root:has(#cv-dark:checked) .cv-contacts a {
+    color: #9cc8ff;
+  }
+
+  :root:has(#cv-dark:checked) .cv-display input {
+    accent-color: #9cc8ff;
+  }
+}
+
+/* Windows High Contrast and other forced colours: keep links distinguishable */
+@media (forced-colors: active) {
+  .cv-contacts a { color: LinkText; text-decoration: underline; }
+}

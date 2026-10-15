@@ -167,9 +167,9 @@
     cursor: pointer;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .egg.cracked .chick, .egg.cracked .egg-bubble { animation: none; }
-}
+/* Reduced motion: the OS setting or the site's own (a11y.js) */
+:root[data-motion="reduce"] .egg.cracked .chick,
+:root[data-motion="reduce"] .egg.cracked .egg-bubble { animation: none; }
 
 .egg.cracked { cursor: default; }
 .egg.cracked .whole { display: none; }
@@ -398,7 +398,25 @@ body {
     overflow: visible;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .garland-egg, .bunny.hopping .ears { animation: none; }
-    .hidden-egg.found .shell, .hidden-egg.found .tuft { animation: fade 0.6s forwards; }
+/* Reduced motion: the OS setting or the site's own (a11y.js) */
+:root[data-motion="reduce"] .garland-egg,
+:root[data-motion="reduce"] .bunny.hopping .ears { animation: none; }
+:root[data-motion="reduce"] .hidden-egg.found .shell,
+:root[data-motion="reduce"] .hidden-egg.found .tuft { animation: fade 0.6s forwards; }
+
+/* Phones on their side: the digger stands in front of the bottom of the sign, so the
+   hunt-score goes beside the sign instead of under it, where he would cover it */
+@media (max-height: 500px) and (orientation: landscape) {
+    .hunt-score {
+        left: calc(100% + 14px);
+        right: auto;
+        top: auto;
+        bottom: 4px;
+        translate: none;
+        width: max-content;
+        max-width: calc((100vw - 100%) / 2 - 28px);
+        white-space: normal;
+        text-align: center;
+        z-index: 6;
+    }
 }

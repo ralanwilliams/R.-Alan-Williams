@@ -46,9 +46,11 @@ Add `?theme=<name>` to the URL to see a theme on any day, for example `http://lo
 
 Without `?theme=` in the URL, the date alone decides; nothing in the code can force a theme for every visitor. A test checks this.
 
+A visitor who turns off **Seasonal decorations** in the accessibility settings sees no theme at all, whatever the date or `?theme=` says; so does `?decor=off`. See [site-accessibility.md](site-accessibility.md).
+
 ## How a theme is loaded
 
-The loader adds `kit.css` and the theme's stylesheet, then, once both have loaded, runs the theme's script as an ES module. The script runs after the page's own script, so the holes and logo box are already there. Being a module, it has its own scope (the page's script declares top-level names a classic script would clash with) and can import the kit.
+The loader adds `kit.css` and the theme's stylesheet, then, once both have loaded, runs the theme's script as an ES module. The script runs after the page's own script, so the holes and logo box are already there. Being a module, it has its own scope (the page's script declares top-level names a classic script would clash with) and can import the kit. While a theme runs, `<html>` has `data-season="<name>"`, which the page uses to leave room above the sign on narrow screens.
 
 ## The kit
 
@@ -66,7 +68,7 @@ The loader adds `kit.css` and the theme's stylesheet, then, once both have loade
 | `costume({ hat, under, over, tool, label })`, `tools`, `GOLD` | Dresses the digger and hands him a tool (see below) |
 | `says(parent, text)` | A speech bubble that fades in and out |
 | `every([min, max], fn)`, `napper()`, `tween()`, `rand`, `pick`, `chance`, `wait` | Random timing, pauses that can be cut short, easing a value |
-| `calm` | True when the visitor has asked for reduced motion |
+| `calm` | True when reduced motion is on: the visitor’s accessibility setting, or else their OS (`a11y.js` puts it on `<html>` as `data-motion`) |
 | `backdrop(el, layer)`, `make(markup)`, `logoBox` | Lower-level helpers |
 
 Backdrop layers sit behind the page at `z-index: -1`, in this order: sky, sky weather (fireworks), ground, weather.
@@ -97,11 +99,12 @@ Each theme dresses him with `costume()` from the kit:
 
 1. Create `public/themes/<name>/` with `<name>.css` and `<name>.js`.
 2. Add `{ name: '<name>', from: …, to: … }` to `THEMES`.
-3. Import what you need from `../kit.js`, and give the digger an outfit with `costume()`. With `calm` set, skip animation that moves things about.
+3. Import what you need from `../kit.js`, and give the digger an outfit with `costume()`. With `calm` set, skip animation that moves things about. In CSS, write reduced-motion rules as `:root[data-motion="reduce"] …`, not with the `prefers-reduced-motion` media query, so the site’s own setting applies too (a test checks).
+4. Follow the rest of [site-accessibility.md](site-accessibility.md#adding-to-the-page-or-a-theme): text over the scene gets a solid background in high contrast, and on phones held sideways nothing with text goes right under the sign, where the digger stands.
 
 ## Tests
 
-`npm test` includes `tests/Site.Js`. It checks how dates are matched, that every theme in `THEMES` has valid dates and both its files, that every theme folder is listed, and which theme each 2027 holiday gets.
+`npm test` includes `tests/Site.Js`. It checks how dates are matched, that every theme in `THEMES` has valid dates and both its files, that every theme folder is listed, and which theme each 2027 holiday gets. `a11y.test.mjs` there also checks that no theme uses the reduced-motion media query directly.
 
 ## The themes
 
@@ -121,4 +124,4 @@ Each theme dresses him with `costume()` from the kit:
 
 **Christmas.** A starry night with a full moon and snow falling, in gusts, on a snowy yard with a snowman, pines, a lit tree and a cabin with smoke from its chimney. The logo box is snowed on, hung with icicles and strung with lights; clicking the lights changes their pattern (twinkle, chase, alternate, steady). Santa's sleigh flies over (`SANTA_EVERY`) and often drops a present, which lands in the snow; click it to open it.
 
-**Reduced motion.** With reduced motion turned on, every theme keeps its scene but drops the movement: no weather, flyers, fireworks or wandering characters, and the clouds hold still. Clicking still works where it doesn't need movement, such as changing the Christmas lights, asking the groundhog for a forecast or making the turkey gobble.
+**Reduced motion.** With reduced motion turned on, in the site’s accessibility settings or the OS, every theme keeps its scene but drops the movement: no weather, flyers, fireworks or wandering characters, and the clouds hold still. Clicking still works where it doesn't need movement, such as changing the Christmas lights, asking the groundhog for a forecast or making the turkey gobble.

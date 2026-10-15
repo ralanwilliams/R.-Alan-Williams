@@ -15,7 +15,7 @@ costume({
 });
 
 const SANTA_SAYS = ['Ho ho ho!', 'Merry Christmas!', 'On, Dasher! On, Dancer!', 'Have you been good?'];
-const PRESENTS_HOLD = ['A new project!', 'Socks. Again.', 'A lump of coal?!', 'Merry Christmas!', 'Just what I wanted!', 'More RAM!'];
+const PRESENTS_HOLD = ['A new project!', 'Socks. Again.', 'A lump of coal?!', 'Merry Christmas!', 'Just what I wanted!'];
 const SANTA_EVERY = [14000, 26000];           // ms between flights
 const GUST_EVERY = [8000, 16000];             // ms between gusts of wind in the snow
 const MAX_PRESENTS = 6;                       // on the ground at once

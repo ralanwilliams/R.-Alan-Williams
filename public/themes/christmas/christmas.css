@@ -196,6 +196,7 @@ body {
     outline-offset: 2px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .bulb, .tree-light, .cabin .smoke circle { animation: none !important; }
-}
+/* Reduced motion: the OS setting or the site's own (a11y.js) */
+:root[data-motion="reduce"] .bulb,
+:root[data-motion="reduce"] .tree-light,
+:root[data-motion="reduce"] .cabin .smoke circle { animation: none !important; }

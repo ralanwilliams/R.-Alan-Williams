@@ -117,6 +117,5 @@ body {
     outline-offset: 2px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .pot .glint { animation: none; }
-}
+/* Reduced motion: the OS setting or the site's own (a11y.js) */
+:root[data-motion="reduce"] .pot .glint { animation: none; }

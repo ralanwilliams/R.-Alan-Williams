@@ -101,13 +101,14 @@ public sealed class PublicFiles(ICvStore store, IPdfRenderer pdf)
         foreach (var locale in wanted.GroupBy(w => w.Locale))
         {
             var localized = Localizer.Localize(document, catalog, locale.Key);
-            var html = HtmlRenderer.Render(localized); // standalone: the stylesheet is inlined
+            // Standalone, with the stylesheet inlined. Only the HTML download carries the display
+            // options; the PDF is printed without them.
             foreach (var (_, format) in locale)
             {
                 var content = format switch
                 {
-                    CvRender.Pdf => await pdf.RenderAsync(html, cancellationToken),
-                    CvRender.Html => Encoding.UTF8.GetBytes(html),
+                    CvRender.Pdf => await pdf.RenderAsync(HtmlRenderer.Render(localized), cancellationToken),
+                    CvRender.Html => Encoding.UTF8.GetBytes(HtmlRenderer.Render(localized, new RenderOptions(DisplayOptions: true))),
                     CvRender.Markdown => Encoding.UTF8.GetBytes(MarkdownRenderer.Render(localized)),
                     _ => throw new ArgumentOutOfRangeException(nameof(wanted), format, "Unknown file format."),
                 };
