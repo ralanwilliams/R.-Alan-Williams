@@ -14,7 +14,10 @@ public sealed record Messages(
     string DateRange,
     string DocumentTitle,
     string Missing,
-    string Label)
+    string Label,
+    string DisplayOptions,
+    string ReadableLayout,
+    string DarkColours)
 {
     private static readonly ConcurrentDictionary<string, Messages?> Cache = new(StringComparer.Ordinal);
 
@@ -53,7 +56,7 @@ public sealed record Messages(
 
         var messages = JsonSerializer.Deserialize<Messages>(stream, Json)
             ?? throw new InvalidDataException($"Rendering/Messages/{locale}.json is empty.");
-        if (messages.Months is not { Count: 12 } || new[] { messages.Present, messages.DateRange, messages.DocumentTitle, messages.Missing, messages.Label }.Any(string.IsNullOrWhiteSpace))
+        if (messages.Months is not { Count: 12 } || new[] { messages.Present, messages.DateRange, messages.DocumentTitle, messages.Missing, messages.Label, messages.DisplayOptions, messages.ReadableLayout, messages.DarkColours }.Any(string.IsNullOrWhiteSpace))
         {
             throw new InvalidDataException($"Rendering/Messages/{locale}.json must define 12 months and every message.");
         }

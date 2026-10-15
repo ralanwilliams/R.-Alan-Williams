@@ -198,6 +198,28 @@ body {
     height: 0;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .dawn-sky::before, .handler .phil, .handler .phil-shadow { transition: none; }
+/* Reduced motion: the OS setting or the site's own (a11y.js) */
+:root[data-motion="reduce"] .dawn-sky::before,
+:root[data-motion="reduce"] .handler .phil,
+:root[data-motion="reduce"] .handler .phil-shadow { transition: none; }
+
+/* Phones on their side: the digger stands in front of the bottom of the sign, so the
+   tally goes beside the sign instead of under it, where he would cover it */
+@media (max-height: 500px) and (orientation: landscape) {
+    .tally {
+        left: calc(100% + 14px);
+        right: auto;
+        top: 4px;
+        bottom: auto;
+        translate: none;
+        width: max-content;
+        max-width: calc((100vw - 100%) / 2 - 28px);
+        white-space: normal;
+        text-align: center;
+        z-index: 6;
+    }
+
+    .knob-sign {
+        font-size: 1.1rem;
+    }
 }

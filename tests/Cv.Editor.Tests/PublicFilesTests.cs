@@ -58,6 +58,8 @@ public sealed class PublicFilesTests
         Assert.Contains("<style>", Text(html));                 // standalone
         Assert.DoesNotContain("data-node-id=", Text(html));     // not the preview
         Assert.Contains("Programvareutvikler", Text(html));
+        Assert.Contains("id=\"cv-readable\"", Text(html));        // the page's display options...
+        Assert.DoesNotContain("id=\"cv-readable\"", app.Pdf.LastHtml);   // ...which the PDF is printed without
 
         var md = app.Store.Files.Single(f => f.File is { Locale: "en", Format: "md" }).File;
         Assert.Equal(MarkdownRenderer.RendererVersion, md.RendererVersion);

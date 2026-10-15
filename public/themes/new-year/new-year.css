@@ -123,6 +123,24 @@ body {
     white-space: nowrap;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .bunting .flag, .skyline .flicker, .skyline .beacon { animation: none; }
+/* Reduced motion: the OS setting or the site's own (a11y.js) */
+:root[data-motion="reduce"] .bunting .flag,
+:root[data-motion="reduce"] .skyline .flicker,
+:root[data-motion="reduce"] .skyline .beacon { animation: none; }
+
+/* Phones on their side: the digger stands in front of the bottom of the sign, so the
+   countdown goes beside the sign instead of under it, where he would cover it */
+@media (max-height: 500px) and (orientation: landscape) {
+    .countdown {
+        left: calc(100% + 14px);
+        right: auto;
+        top: auto;
+        bottom: 4px;
+        translate: none;
+        width: max-content;
+        max-width: calc((100vw - 100%) / 2 - 28px);
+        white-space: normal;
+        text-align: center;
+        z-index: 6;
+    }
 }

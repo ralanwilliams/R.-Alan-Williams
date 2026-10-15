@@ -28,8 +28,8 @@ costume({
 });
 
 // What the ghost says when it gets out of the pumpkin, picked at random
-const GHOST_SAYS = ['Boo!', 'Trick or treat?', 'Happy Halloween!', 'Shipping soon... mwahaha', 'Did you check the basement?'];
-const WITCH_SAYS = ['Hehehe!', 'Cackle cackle!', 'Out of my way!', 'Nice site, dearie!'];
+const GHOST_SAYS = ['Boo!', 'Trick or treat?', 'Happy Halloween!', 'Hire this man... mwahaha'];
+const WITCH_SAYS = ['Hehehe!', 'Hire this man!', 'I think I left the cauldron on!', 'Nice site, dearie!'];
 const BAT_EVERY = [1500, 6000];               // ms between colonies of bats, at random
 const BATS_PER_COLONY = [3, 9];
 const MAX_BATS = 40;                          // on screen at once

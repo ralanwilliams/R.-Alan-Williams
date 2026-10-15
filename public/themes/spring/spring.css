@@ -188,9 +188,16 @@ body {
     to { transform: scaleY(0.3); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .flower, .vine .stem, .vine .leaf, .vine .blossom, .spring-sun .rays,
-    .butterfly .wing-l, .butterfly .wing-r, .songbird .wing, .bee .bee-wing { animation: none; }
-    .vine .stem { stroke-dashoffset: 0; }
-    .spring-sky::before, .rainbow { transition: none; }
-}
+/* Reduced motion: the OS setting or the site's own (a11y.js) */
+:root[data-motion="reduce"] .flower,
+:root[data-motion="reduce"] .vine .stem,
+:root[data-motion="reduce"] .vine .leaf,
+:root[data-motion="reduce"] .vine .blossom,
+:root[data-motion="reduce"] .spring-sun .rays,
+:root[data-motion="reduce"] .butterfly .wing-l,
+:root[data-motion="reduce"] .butterfly .wing-r,
+:root[data-motion="reduce"] .songbird .wing,
+:root[data-motion="reduce"] .bee .bee-wing { animation: none; }
+:root[data-motion="reduce"] .vine .stem { stroke-dashoffset: 0; }
+:root[data-motion="reduce"] .spring-sky::before,
+:root[data-motion="reduce"] .rainbow { transition: none; }

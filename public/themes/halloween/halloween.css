@@ -226,7 +226,9 @@ body {
     to { transform: scaleY(-0.55); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .pumpkin, .pumpkin .glow, .spider.scurry .legs { animation: none; }
-    .spider, .silk { transition: none; }
-}
+/* Reduced motion: the OS setting or the site's own (a11y.js) */
+:root[data-motion="reduce"] .pumpkin,
+:root[data-motion="reduce"] .pumpkin .glow,
+:root[data-motion="reduce"] .spider.scurry .legs { animation: none; }
+:root[data-motion="reduce"] .spider,
+:root[data-motion="reduce"] .silk { transition: none; }

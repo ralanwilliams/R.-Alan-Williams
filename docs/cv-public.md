@@ -35,7 +35,7 @@ tests/Cv.Public.Js/           Node tests for download.js and keep-alive.js
   - `ETag`: the file's SHA-256, so `If-None-Match` gets a `304`.
   - `CV-Version`: the version number that was served.
   - `X-Content-Type-Options: nosniff` on everything.
-  - HTML also gets a Content Security Policy that allows no scripts.
+  - HTML also gets a Content Security Policy that allows no scripts. Its display options (a readable layout and dark colours) are checkboxes the stylesheet reads, so they need none ([site-accessibility.md](site-accessibility.md#the-cv-page)).
 - **Caching:**
   - Current-version URLs are cached for 5 minutes, permalinks for a day, at Cloudflare's edge and in browsers. A publish shows up within 5 minutes; nothing needs purging.
   - Every URL form of the same file shares one cache entry.

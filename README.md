@@ -18,6 +18,7 @@ The data layer, the editor and the public download links are built and live.
 | Editor (edit, save, publish, history, restore) | Done: a local web app ([guide](docs/cv-editor.md)), also reachable at editor.ralanwilliams.com through a Cloudflare Tunnel behind Access ([ADR 0004](docs/adr/0004-remote-editor-access.md)) |
 | Renderer (HTML, PDF and Markdown per language) | Done: the editor's preview and downloads, and the files stored on publish |
 | Public download links | Done: a Cloudflare Pages Function over Hyperdrive ([guide](docs/cv-public.md), [ADR 0003](docs/adr/0003-public-cv-downloads.md)), with a daily keep-alive Worker |
+| Site accessibility | Done: settings that switch the landing page into a version aimed at WCAG 2.2 AAA, and display options on the HTML CV ([guide](docs/site-accessibility.md), [ADR 0005](docs/adr/0005-site-accessibility-settings.md)) |
 
 ## How it works
 
@@ -60,12 +61,14 @@ Each significant decision is written up as an Architecture Decision Record (ADR)
 | [0002](docs/adr/0002-cv-editor.md) | CV editor: a local web app over the versioned store | Accepted | 2026-10-06 |
 | [0003](docs/adr/0003-public-cv-downloads.md) | Public CV downloads: files stored on publish, served from the database | Accepted | 2026-10-06 |
 | [0004](docs/adr/0004-remote-editor-access.md) | Remote editor access: a Cloudflare Tunnel behind Cloudflare Access | Accepted | 2026-10-08 |
+| [0005](docs/adr/0005-site-accessibility-settings.md) | Site accessibility: settings that switch the site into a conforming version | Accepted | 2026-10-15 |
 <!-- adr-index:end -->
 
 ## Repository layout
 
 ```
 ├── public/              the website (ralanwilliams.com)
+├── public/a11y.js       accessibility settings for the landing page (with a11y.css)
 ├── public/themes/       seasonal themes for the landing page, each shown between its dates
 ├── functions/           Cloudflare Pages routes for /cv downloads
 ├── src/Cv.Public/       the /cv endpoint and the keep-alive: URLs, headers, caching, database query
@@ -80,6 +83,7 @@ Each significant decision is written up as an Architecture Decision Record (ADR)
 ├── docs/cv-editor.md    editor setup, use and tests
 ├── docs/cv-public.md    public download setup (Hyperdrive, Pages, rate limit)
 ├── docs/site-themes.md  seasonal themes: setting dates, previewing, adding one
+├── docs/site-accessibility.md  accessibility settings, layouts, and the WCAG position
 └── scripts/             helper scripts: .env loading, the ADR index, starting the editor at boot, its tray icon
 ```
 

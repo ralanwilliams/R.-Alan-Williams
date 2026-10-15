@@ -174,7 +174,8 @@ function buildStage() {
         ${members}
         <rect x="${wallLeft - 20}" y="${deck}" width="${wallRight - wallLeft + 40}" height="10" fill="#4a3424"/>
         <path d="M${wallLeft - 20} ${deck}H${wallRight + 20}" stroke="#f4f8ff" stroke-width="2"/>`;
-    handler.style.left = cx + 60 + 'px';
+    // Beside the digger, but never past the right edge of a narrow window: it's a button
+    handler.style.left = Math.min(cx + 60, document.documentElement.clientWidth - handler.offsetWidth - 4) + 'px';
 }
 
 // The backs of the crowd: two rows of heads and shoulders in hats, hoods and beanies,

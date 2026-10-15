@@ -205,6 +205,39 @@ public class HtmlRendererTests
         Assert.DoesNotContain("<script", html);
         Assert.Contains("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">", html);
     }
+
+    [Theory]
+    [InlineData("en", "Display options", "Readable layout", "Dark colours")]
+    [InlineData("nb", "Visningsvalg", "Lettlest oppsett", "Mørke farger")]
+    [InlineData("fr", "Options d’affichage", "Mise en page lisible", "Couleurs sombres")]
+    public void The_public_page_offers_display_options_in_its_language(string locale, string title, string readable, string dark)
+    {
+        var html = Render(TestDraft.Sample().Draft, locale, new RenderOptions(DisplayOptions: true));
+
+        Assert.Contains($"<p class=\"cv-display-title\" id=\"cv-display-title\">{title}</p>", html);
+        Assert.Contains($"<label><input type=\"checkbox\" id=\"cv-readable\"> {readable}</label>", html);
+        Assert.Contains($"<label><input type=\"checkbox\" id=\"cv-dark\"> {dark}</label>", html);
+        // Before the CV, and still a page that runs nothing (the stylesheet reads the boxes)
+        Assert.True(html.IndexOf("cv-display", StringComparison.Ordinal) < html.IndexOf("<main", StringComparison.Ordinal));
+        Assert.DoesNotContain("<script", html);
+        Assert.DoesNotContain("<form", html);
+    }
+
+    [Fact]
+    public void Display_options_are_left_out_unless_asked_for()
+    {
+        Assert.DoesNotContain("cv-display\"", Render(TestDraft.Sample().Draft, "en"));
+        Assert.DoesNotContain("cv-display\"", Render(TestDraft.Sample().Draft, "en", new RenderOptions(Preview: true)));
+    }
+
+    [Fact]
+    public void The_display_options_are_screen_only()
+    {
+        // Hidden in print, so a PDF printed from the public page would not show them either
+        Assert.Matches(@"@media print \{\s*\.cv-display \{ display: none; \}", HtmlRenderer.Css);
+        Assert.Contains(":root:has(#cv-readable:checked)", HtmlRenderer.Css);
+        Assert.Contains(":root:has(#cv-dark:checked)", HtmlRenderer.Css);
+    }
 }
 
 public class MessagesTests
@@ -222,6 +255,9 @@ public class MessagesTests
         Assert.Contains("{end}", messages.DateRange);
         Assert.Contains("{name}", messages.DocumentTitle);
         Assert.Contains("{label}", messages.Label);
+        Assert.False(string.IsNullOrWhiteSpace(messages.DisplayOptions));
+        Assert.False(string.IsNullOrWhiteSpace(messages.ReadableLayout));
+        Assert.False(string.IsNullOrWhiteSpace(messages.DarkColours));
     }
 
     [Fact]
