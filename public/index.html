@@ -233,8 +233,8 @@
         .hole svg.cracks { z-index: 1; }
         .hole svg.body { z-index: 2; }
 
-        .hole a:hover svg.body,
-        .hole a:focus-visible svg.body {
+        .hole a:focus-visible svg.body,
+        .hole.revealed svg.body {
             z-index: 3;
         }
 
@@ -272,14 +272,14 @@
             margin-left: 6px;
         }
 
-        .hole a:hover .label,
         .hole a:focus-visible .label,
+        .hole.revealed .label,
         .hole.current .label {
             opacity: 1;
         }
 
-        .hole a:hover .label,
-        .hole a:focus-visible .label {
+        .hole a:focus-visible .label,
+        .hole.revealed .label {
             z-index: 5;
         }
 
@@ -290,14 +290,23 @@
             transition: transform 0.25s ease-in;
         }
 
-        .hole a:hover .peek,
-        .hole a:focus-visible .peek {
+        .hole a:focus-visible .peek,
+        .hole.revealed .peek {
             transform: translateY(0);
             transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
+        @media (hover: hover) {
+            .hole a:hover svg.body { z-index: 3; }
+            .hole a:hover .label { opacity: 1; z-index: 5; }
+            .hole a:hover .peek {
+                transform: translateY(0);
+                transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+        }
+
         @media (prefers-reduced-motion: reduce) {
-            .peek, .hole a:hover .peek, .hole a:focus-visible .peek { transition: none; }
+            .peek, .hole a:hover .peek, .hole a:focus-visible .peek, .hole.revealed .peek { transition: none; }
         }
 
         /* Chips flying off the bit */
@@ -425,8 +434,19 @@
             { name: 'BrewBuzz', shipped: '2021-07', url: 'https://www.brewbuzz.beer/', icon: 'images/BrewBuzz.png' },
             { name: 'Squigglepig', shipped: '2026-10', url: 'https://squigglepig.app/', icon: 'images/Squigglepig.png', iconCenter: 0.3 },
             { name: 'CV Editor', shipped: '2026-11', url: 'https://github.com/ralanwilliams/R.-Alan-Williams#readme', icon: 'images/CV.png' },
-            { name: 'Pappaperm', url: '#', logoBg: '#2b4a6f', percentComplete: 1 },
+            { name: 'Pappaperm', url: '#', logoBg: '#2b4a6f', percentComplete: percentOfDaysGone(new Date(2026, 9, 17), new Date(2027, 3, 5)) },
         ];
+
+        function daysUntil(day) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return Math.max(0, Math.round((day - today) / 864e5));
+        }
+
+        function percentOfDaysGone(start, end) {
+            const total = Math.round((end - start) / 864e5);
+            return 100 * (1 - daysUntil(end) / total);
+        }
 
         const NS = 'http://www.w3.org/2000/svg';
         const K = 0.48;                           // perspective squash shared by every hole
@@ -683,6 +703,21 @@
         }
         fitHoles();
         new ResizeObserver(fitHoles).observe(list);
+
+        let pointerType = 'mouse';
+        const revealed = () => list.querySelector('.hole.revealed');
+        document.addEventListener('pointerdown', e => {
+            pointerType = e.pointerType;
+            const up = revealed();
+            if (up && !up.contains(e.target)) up.classList.remove('revealed');
+        });
+        list.addEventListener('click', e => {
+            const hole = e.target.closest('.hole:not(.current)');
+            // detail is 0 for a click made with the keyboard
+            if (!hole || pointerType === 'mouse' || e.detail === 0 || hole.classList.contains('revealed')) return;
+            e.preventDefault();
+            hole.classList.add('revealed');
+        });
     </script>
     <script type="module" src="themes/themes.js"></script>
 </body>
