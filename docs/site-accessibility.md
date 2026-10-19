@@ -46,15 +46,20 @@ The button and dialog are made from the sign's materials, but the look costs not
 
 ## Landing page layout
 
+- **The page never scrolls.** It is exactly one screen tall.
+  - **The scene fits the window's height.** `fitScene()` in `index.html` zooms the sign, digger and holes (CSS `zoom` on `.container`) until they fit, with any theme decorations above the sign. It runs again on resize, when fonts load, when a setting changes, and when a theme adds to the sign.
+  - **Labels keep their size.** They divide by the zoom (`--fit`), so their text doesn't shrink with the scene.
+  - **The project list** takes the height left under the scene, and its list scrolls inside it.
+  - **The one exception:** the scene won't shrink below half size (`MIN_ZOOM`). Past that, someone has zoomed far in or enlarged their text, and the page overflows and scrolls rather than hiding content from them (WCAG 1.4.4, 1.4.10).
 - **Narrow screens** (320–360px, which is also what 400% zoom gives a 1280px window):
   - The sign's lettering scales with the window.
   - Nothing scrolls sideways in any theme. `html` and `body` both clip, and `body` is the containing block for what themes place on the page.
 - **Phones on their side** (landscape, at most 500px tall):
   - The sign is sized by the screen's height, and the digger stands in front of its lower part.
-  - The whole dig site fits without scrolling: holes, cracks and the current project's label.
+  - The whole dig site fits without scrolling: holes, cracks, and each hole's label when it shows.
   - Theme badges that sit under the sign move beside it, where he can't cover them.
 - **Large screens** (1400 × 900 and up): everything is a little bigger.
-- **No project is lost on a narrow screen.** When older holes don't fit, a **Show all N projects** button turns on the list (WCAG 1.4.10).
+- **Narrow screens show the most recent projects.** Older holes that don't fit are hidden rather than scrolled to. The **List of projects** setting lists them all, and the most accessible preset turns it on.
 - **Headings:** the page's `h1` is *Robert Alan Williams, Full Stack Developer*. The carved letters and the spaced-out tagline are hidden from screen readers, which read the words once.
 - **Hover labels** follow WCAG 1.4.13. The pointer can move onto a label, and Escape puts a raised project back down until the pointer or focus leaves it.
 - **With a theme on a narrow screen,** the page leaves room under the settings button for what the theme puts above the sign. The theme loader sets `data-season` while a theme runs.
@@ -85,6 +90,7 @@ The public `/cv/{lang}.html` runs no scripts: its Content Security Policy allows
   - Easter's nest egg can only be dragged (2.5.7), and it opens a tab by itself after it breaks (3.2.5).
   - Several theme buttons are under 44 × 44px (2.5.5).
   - Groundhog's camera flashes can exceed three a second (2.3.2).
+- **Narrow screens hide older projects** (1.4.10). The list shows them all.
 - **Hole openings can be under 44 × 44px.** The list offers the same links 48px tall, which the "equivalent" exception to 2.5.5 allows.
 
 ## Adding to the page or a theme
