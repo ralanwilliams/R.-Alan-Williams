@@ -75,16 +75,15 @@ They are not remembered between visits, which is the cost of no scripts. They ar
 - The site can be configured to the target level (AAA) without removing anything from the default design.
 - **One path for reduced motion:** the setting and the OS preference reach every theme through `calm` and `data-motion`.
 - **Fixes everyone gets, whatever their settings:**
-  - Nothing is lost on narrow screens.
   - The page has a real `h1`.
   - Hover labels follow 1.4.13.
-  - Nothing scrolls sideways at 320px.
-  - On phones on their side, the dig site fits the screen.
+  - The page never scrolls: the scene is zoomed to fit the window, and the project list scrolls inside itself. Only below half size, when someone has zoomed far in, does the page scroll, so nothing is hidden from them.
 - **The CV page still runs no scripts.**
 
 **Negative / costs**
 
 - The default configuration doesn't conform. That's accepted under conformance requirement 1, but a visitor has to find the settings, even though the button is first in the tab order.
+- Narrow screens still show only the most recent projects, by choice: the dig site stays uncluttered, and the project list (part of the alternate version) has them all.
 - Changing motion or decorations reloads the page.
 - The CV's options reset on every visit.
 - Themes must follow the conventions in [site-accessibility.md](../site-accessibility.md): `data-motion` rules, `calm`, and no text where the digger stands on phones held sideways.

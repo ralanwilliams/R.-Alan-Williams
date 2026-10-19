@@ -30,17 +30,24 @@
             position: relative;
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
+            /* One screen, no scrolling: the scene is zoomed to fit (fitScene below) and the
+               project list takes what height is left. Only when the scene can't shrink any
+               further (a visitor zoomed far in) does the page overflow and scroll. */
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            /* safe: if it ever overflows, it overflows downwards, where it can be scrolled to */
+            justify-content: safe center;
             align-items: center;
-            min-height: 100vh;
-            min-height: 100dvh;
+            height: 100vh;
+            height: 100dvh;
             /* Room at the top for the accessibility button */
             padding: 72px 20px 20px;
             overflow-x: clip;
         }
 
+        /* The scene: sign, digger and holes. fitScene() zooms it to fit the window. */
         .container {
+            flex: none;
             text-align: center;
             width: 100%;
             max-width: 700px;
@@ -263,7 +270,8 @@
             top: calc(50% + var(--rim) * var(--hs) + 6px);
             transform: translateX(-50%);
             font-family: 'Oswald', 'Arial Narrow', sans-serif;
-            font-size: 0.85rem;
+            /* Kept at its own size however far the scene is zoomed out (--fit) */
+            font-size: calc(0.85rem / var(--fit, 1));
             color: #333;
             background: rgba(245, 245, 245, 0.85);
             padding: 0 6px;
@@ -281,8 +289,7 @@
         }
 
         .hole a:focus-visible .label,
-        .hole.revealed .label,
-        .hole.current .label {
+        .hole.revealed .label {
             opacity: 1;
         }
 
@@ -359,11 +366,15 @@
 
         :root[data-motion="reduce"] .chip { display: none; }
 
-        /* Plain list of every project (the "List of projects" setting), and the button
-           that offers it when narrow screens leave older holes out */
+        /* Plain list of every project (the "List of projects" setting) */
+        /* Under the scene, taking the height that is left; its list scrolls inside it */
         .project-list {
             display: none;
-            margin: 0 auto;
+            flex: 0 1 auto;
+            flex-direction: column;
+            min-height: 0;
+            width: 100%;
+            margin: 12px auto 0;
             max-width: 32rem;
             padding: 10px 0 4px;
             text-align: left;
@@ -375,7 +386,7 @@
         }
 
         :root[data-list="on"] .project-list {
-            display: block;
+            display: flex;
         }
 
         .project-list h2 {
@@ -387,6 +398,8 @@
         }
 
         .project-list ul {
+            min-height: 0;
+            overflow-y: auto;
             list-style: none;
             border-top: 1px solid #c4c4c4;
         }
@@ -410,24 +423,6 @@
         .project-list a small {
             font-size: 1rem;
             color: #333;
-        }
-
-        .more-projects {
-            display: block;
-            margin: 0 auto;
-            min-height: 44px;
-            padding: 0 16px;
-            font: 1rem 'Oswald', 'Arial Narrow', sans-serif;
-            color: #222;
-            background: rgba(245, 245, 245, 0.92);
-            border: 2px solid #555;
-            border-radius: 22px;
-            cursor: pointer;
-        }
-
-        .more-projects[hidden],
-        :root[data-list="on"] .more-projects {
-            display: none;
         }
 
         /* High contrast (a11y.js): the sign in solid dark wood with light lettering, holes
@@ -501,12 +496,6 @@
 
         :root[data-contrast="high"] .project-list a small {
             color: #000;
-        }
-
-        :root[data-contrast="high"] .more-projects {
-            color: #000;
-            background: #fff;
-            border-color: #000;
         }
 
         /* Forced colours (Windows High Contrast): outline the holes so they can be found */
@@ -653,7 +642,7 @@
         </div>
 
         <div class="dig-site">
-            <!-- The digger. Themes dress him through costume() in themes/kit.js: the tool
+            <!-- The digger. Created by Maxx Crawford. Themes dress him through costume() in themes/kit.js: the tool
                  group holds his jackhammer, the hat group his Santa hat, "under" is drawn
                  behind him and "over" in front. -->
             <svg class="digger" viewBox="0 0 250 237" width="250" height="237" role="img"
@@ -695,13 +684,12 @@
             </svg>
             <ol class="holes" aria-label="Projects, oldest first"></ol>
         </div>
-
-        <button class="more-projects" type="button" hidden></button>
-        <section class="project-list" aria-labelledby="project-list-title">
-            <h2 id="project-list-title">Projects</h2>
-            <ul></ul>
-        </section>
     </div>
+
+    <section class="project-list" aria-labelledby="project-list-title">
+        <h2 id="project-list-title">Projects</h2>
+        <ul></ul>
+    </section>
 
     <script>
         // One hole per project. Finished projects are ordered by shipped date ('YYYY-MM'),
@@ -984,7 +972,8 @@
         });
 
         // Show as many of the most recent finished holes as fit without going below
-        // MIN_FIT of full size; older ones are hidden on narrow screens.
+        // MIN_FIT of full size; older ones are hidden on narrow screens, so nothing
+        // scrolls sideways. The "List of projects" setting (a11y.js) lists them all.
         const MIN_FIT = 0.7;
         const site = document.querySelector('.dig-site');
         function fitHoles() {
@@ -996,18 +985,60 @@
             finished.forEach((li, i) => { li.hidden = i < finished.length - shown; });
             const fs = shown ? Math.min(1, room / (shown * slot)) : 1;
             site.style.setProperty('--fs', fs.toFixed(3));
-            // Nothing is lost on a narrow screen: the left-out holes are in the plain list
-            const left = finished.length - shown;
-            more.hidden = !left;
-            more.textContent = `Show all ${sorted.length} projects`;
         }
-        const more = document.querySelector('.more-projects');
-        more.addEventListener('click', () => {
-            settings.set('list', 'on');
-            plainList.querySelector('a')?.focus();
-        });
         fitHoles();
         new ResizeObserver(fitHoles).observe(list);
+
+        // The page never scrolls: the scene (sign, digger, holes) is zoomed out until it
+        // fits the window above the project list, if that is showing, down to MIN_ZOOM.
+        // Smaller than that and it would be unreadable, so the page overflows and scrolls
+        // instead, which is what someone zoomed far in needs (WCAG 1.4.4, 1.4.10). Labels
+        // undo the zoom (--fit) to keep their text size. A theme's decorations above the
+        // sign must fit too.
+        const MIN_ZOOM = 0.5;
+        // Room a theme needs above the sign at full size (Groundhog's sign, the hen's nest,
+        // the party hat). Reserved rather than only measured: some decorations settle into
+        // place, or hop, after the fit, and the scene shouldn't change size as they do.
+        const DECOR_ABOVE = 76;
+        const scene = document.querySelector('.container');
+        const projectList = document.querySelector('.project-list');
+        function fitScene() {
+            const body = getComputedStyle(document.body);
+            const padTop = parseFloat(body.paddingTop), padBottom = parseFloat(body.paddingBottom);
+            const listRoom = getComputedStyle(projectList).display === 'none' ? 0
+                : Math.min(projectList.scrollHeight, Math.max(120, innerHeight * 0.35)) + 12;
+            let zoom = 1;
+            scene.style.zoom = '';
+            scene.style.marginTop = '';
+            for (let pass = 0; pass < 5; pass++) {
+                const box = scene.getBoundingClientRect();
+                const parts = [...scene.querySelectorAll('.logo-box *:not(svg *), .hole:not([hidden]) svg, .hole:not([hidden]) .label')]
+                    .map(e => e.getBoundingClientRect()).filter(r => r.height);
+                const top = Math.min(box.top, ...parts.map(r => r.top));
+                const bottom = Math.max(box.bottom, ...parts.map(r => r.bottom));
+                // The scene's height with what hangs below it, and the room above it for
+                // what sits on top of the sign: where that is more than the top padding
+                // gives, the scene moves down (its margin is zoomed with it, so divide)
+                const height = bottom - box.top;
+                const above = Math.max(box.top - top, document.documentElement.dataset.season ? DECOR_ABOVE * zoom : 0);
+                const extra = Math.max(0, above + 4 - padTop);
+                scene.style.marginTop = extra ? (extra / zoom).toFixed(1) + 'px' : '';
+                const room = innerHeight - padTop - padBottom - listRoom - extra;
+                if (height <= room + 0.5) break;
+                zoom = Math.max(MIN_ZOOM, zoom * room / height);
+                scene.style.zoom = zoom.toFixed(3);
+                if (zoom === MIN_ZOOM) break;
+            }
+            document.documentElement.style.setProperty('--fit', zoom.toFixed(3));
+        }
+        let fitting = 0;
+        const refit = () => { cancelAnimationFrame(fitting); fitting = requestAnimationFrame(fitScene); };
+        fitScene();
+        addEventListener('resize', refit);
+        document.fonts.ready.then(refit);
+        document.addEventListener('site-settings', refit);
+        // A theme adds its decorations to the sign after this script has run
+        new MutationObserver(refit).observe(document.querySelector('.logo-box'), { childList: true });
 
         let pointerType = 'mouse';
         const revealed = () => list.querySelector('.hole.revealed');
@@ -1017,7 +1048,7 @@
             if (up && !up.contains(e.target)) up.classList.remove('revealed');
         });
         list.addEventListener('click', e => {
-            const hole = e.target.closest('.hole:not(.current)');
+            const hole = e.target.closest('.hole');
             // detail is 0 for a click made with the keyboard
             if (!hole || pointerType === 'mouse' || e.detail === 0 || hole.classList.contains('revealed')) return;
             e.preventDefault();
@@ -1028,7 +1059,7 @@
         // focus moves away from it
         document.addEventListener('keydown', e => {
             if (e.key !== 'Escape') return;
-            for (const hole of list.querySelectorAll('.hole:not(.current)')) {
+            for (const hole of list.querySelectorAll('.hole')) {
                 if (hole.matches(':hover, :focus-within, .revealed')) {
                     hole.classList.remove('revealed');
                     hole.classList.add('quiet');
